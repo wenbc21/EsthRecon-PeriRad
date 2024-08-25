@@ -1,15 +1,27 @@
 from PIL import Image
 import torch
+from torchvision import transforms
 from torch.utils.data import Dataset
 
-
 class SACDataSet(Dataset):
-    """自定义数据集"""
 
-    def __init__(self, images_path: list, images_class: list, transform=None):
+    def __init__(self, images_path: list, images_class: list, is_train: bool, args, mean, std):
         self.images_path = images_path
         self.images_class = images_class
-        self.transform = transform
+
+        if is_train :
+            self.transform = transforms.Compose([
+                transforms.RandomResizedCrop(args.input_size),
+                transforms.ToTensor(),
+                transforms.Normalize(mean, std)
+            ])
+        else :
+            self.transform = transforms.Compose([
+                transforms.Resize((args.input_size, args.input_size), 
+                            interpolation=transforms.InterpolationMode.BICUBIC),
+                transforms.ToTensor(),
+                transforms.Normalize(mean, std)
+            ])
 
     def __len__(self):
         return len(self.images_path)

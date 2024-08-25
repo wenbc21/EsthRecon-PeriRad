@@ -3,14 +3,12 @@ import argparse
 
 import torch
 import torch.optim as optim
-from torchvision import transforms
-import torch.optim.lr_scheduler as lr_scheduler
 
 from dataset import SACDataSet
 from model.model_zoo import model_dict
 
 from engine import train_one_epoch, evaluate
-from utils import read_split_data, read_sac_data, create_lr_scheduler, get_params_groups
+from utils import read_sac_data, create_lr_scheduler, get_params_groups, get_mean_std, plot_training_loss
 
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', add_help=False)
@@ -23,6 +21,7 @@ def get_args_parser():
     parser.add_argument('--input_size', type=int, default=224)
     parser.add_argument('--data_path', type=str, default="dataset/Task3cls")
     parser.add_argument('--output_dir', type=str, default='weights')
+    parser.add_argument('--result_dir', type=str, default='results')
     parser.add_argument('--model_config', type=str, default='resnet50')
     parser.add_argument('--weights', type=str, default='', help='initial weights path')
     parser.add_argument('--freeze_layers', type=bool, default=False)
@@ -38,25 +37,25 @@ def main(args):
     train_images_path, train_images_label = read_sac_data(args.data_path, "train")
     val_images_path, val_images_label = read_sac_data(args.data_path, "val")
 
-    data_transform = {
-        "train": transforms.Compose([transforms.RandomResizedCrop(args.input_size),
-                                    #  transforms.RandomHorizontalFlip(),
-                                     transforms.ToTensor(),
-                                     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]),
-        "val": transforms.Compose([transforms.Resize(int(args.input_size * 1.143)),
-                                   transforms.CenterCrop(args.input_size),
-                                   transforms.ToTensor(),
-                                   transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])}
+    mean, std = get_mean_std(train_images_path)
 
     train_dataset = SACDataSet(
         images_path=train_images_path,
         images_class=train_images_label,
-        transform=data_transform["train"])
+        is_train = True, 
+        args = args, 
+        mean = mean, 
+        std = std
+    )
 
     val_dataset = SACDataSet(
         images_path=val_images_path,
         images_class=val_images_label,
-        transform=data_transform["val"])
+        is_train = False, 
+        args = args, 
+        mean = mean, 
+        std = std
+    )
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -98,8 +97,11 @@ def main(args):
     parameters = get_params_groups(model, weight_decay=args.weight_decay)
     optimizer = optim.AdamW(parameters, lr=args.lr, weight_decay=args.weight_decay)
     lr_scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs,
-                                       warmup=True, warmup_epochs=2)
+                                       warmup=True, warmup_epochs=5)
 
+    train_losses = []
+    val_losses = []
+    
     max_accuracy = 0.0
     for epoch in range(args.epochs):
         # train
@@ -120,6 +122,8 @@ def main(args):
             epoch=epoch
         )
         
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
         print("[epoch {}] accuracy: {}".format(epoch, round(val_acc, 3)))
 
         if max_accuracy <= val_acc and epoch > 5:
@@ -127,6 +131,7 @@ def main(args):
             max_accuracy = val_acc
 
     torch.save(model.state_dict(), os.path.join(args.output_dir, args.model_config + "_last.pth"))
+    plot_training_loss(train_losses, val_losses, args)
 
 
 if __name__ == '__main__':

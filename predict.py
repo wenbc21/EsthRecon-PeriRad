@@ -7,6 +7,7 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 
 from model.ConvNeXt import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
+from model.model_zoo import model_dict
 import glob
 
 from sklearn import metrics
@@ -62,10 +63,10 @@ def main():
     num_classes = 2
     img_size = 224
     data_transform = transforms.Compose(
-        [transforms.Resize(int(img_size * 1.14)),
-         transforms.CenterCrop(img_size),
-         transforms.ToTensor(),
-         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        [transforms.Resize((img_size, img_size), 
+                            interpolation=transforms.InterpolationMode.BICUBIC),
+                transforms.ToTensor(),
+         transforms.Normalize([0.29204324, 0.29204324, 0.29204324], [0.29269517, 0.29269517, 0.29269517])])
 
     y_true = []
     y_pred = []
@@ -91,16 +92,16 @@ def main():
         img = torch.unsqueeze(img, dim=0)
 
         # read class_indict
-        json_path = 'cls_model/ConvNeXt/class_indices.json'
+        json_path = 'dataset/class_indices.json'
         assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
 
         with open(json_path, "r") as f:
             class_indict = json.load(f)
 
         # create model
-        model = convnext_base(num_classes=num_classes).to(device)
+        model = model_dict["resnet50"](num_classes=num_classes).to(device)
         # load model weights
-        model_weight_path = "cls_model/ConvNeXt/weights/convnext_base_best.pth"
+        model_weight_path = "weights/resnet50_best.pth"
         model.load_state_dict(torch.load(model_weight_path, map_location=device))
         model.eval()
         with torch.no_grad():

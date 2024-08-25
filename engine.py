@@ -6,8 +6,8 @@ from tqdm import tqdm
 def train_one_epoch(model, optimizer, data_loader, device, epoch, lr_scheduler):
     model.train()
     loss_function = torch.nn.CrossEntropyLoss()
-    accu_loss = torch.zeros(1).to(device)  # 累计损失
-    accu_num = torch.zeros(1).to(device)   # 累计预测正确的样本数
+    accu_loss = torch.zeros(1).to(device)
+    accu_num = torch.zeros(1).to(device)
     optimizer.zero_grad()
 
     sample_num = 0
@@ -37,7 +37,6 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, lr_scheduler):
 
         optimizer.step()
         optimizer.zero_grad()
-        # update lr
         lr_scheduler.step()
 
     return accu_loss.item() / (step + 1), accu_num.item() / sample_num
@@ -49,8 +48,8 @@ def evaluate(model, data_loader, device, epoch):
 
     model.eval()
 
-    accu_num = torch.zeros(1).to(device)   # 累计预测正确的样本数
-    accu_loss = torch.zeros(1).to(device)  # 累计损失
+    accu_num = torch.zeros(1).to(device)
+    accu_loss = torch.zeros(1).to(device)
 
     sample_num = 0
     data_loader = tqdm(data_loader, file=sys.stdout)
