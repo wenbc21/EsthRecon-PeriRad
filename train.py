@@ -18,12 +18,11 @@ def get_args_parser():
     parser.add_argument('--num_workers', type=int, default=8)
     parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--weight_decay', type=float, default=5e-2)
-    parser.add_argument('--input_size', type=int, default=224)
-    parser.add_argument('--data_path', type=str, default="dataset/Task3cls")
-    parser.add_argument('--output_dir', type=str, default='weights')
-    parser.add_argument('--result_dir', type=str, default='results')
-    parser.add_argument('--model_config', type=str, default='resnet50')
-    parser.add_argument('--weights', type=str, default='', help='initial weights path')
+    parser.add_argument('--data_path', type=str, default="dataset/Task3clsAug")
+    parser.add_argument('--weights_dir', type=str, default='weights')
+    parser.add_argument('--results_dir', type=str, default='results')
+    parser.add_argument('--model_config', type=str, default='ResNet50')
+    parser.add_argument('--pretrained', type=str, default='', help='initial weights path')
     parser.add_argument('--freeze_layers', type=bool, default=False)
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
@@ -43,7 +42,6 @@ def main(args):
         images_path=train_images_path,
         images_class=train_images_label,
         is_train = True, 
-        args = args, 
         mean = mean, 
         std = std
     )
@@ -52,7 +50,6 @@ def main(args):
         images_path=val_images_path,
         images_class=val_images_label,
         is_train = False, 
-        args = args, 
         mean = mean, 
         std = std
     )
@@ -77,13 +74,13 @@ def main(args):
 
     model = model_dict[args.model_config](num_classes=args.num_classes)
 
-    if args.weights != "":
-        assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
-        weights_dict = torch.load(args.weights, map_location=device)["model"]
-        for k in list(weights_dict.keys()):
+    if args.pretrained != "":
+        assert os.path.exists(args.pretrained), "pretrained file: '{}' not exist.".format(args.pretrained)
+        pretrained_dict = torch.load(args.pretrained, map_location=device)["model"]
+        for k in list(pretrained_dict.keys()):
             if "head" in k:
-                del weights_dict[k]
-        print(model.load_state_dict(weights_dict, strict=False))
+                del pretrained_dict[k]
+        print(model.load_state_dict(pretrained_dict, strict=False))
 
     if args.freeze_layers:
         for name, para in model.named_parameters():
@@ -127,16 +124,16 @@ def main(args):
         print("[epoch {}] accuracy: {}".format(epoch, round(val_acc, 3)))
 
         if max_accuracy <= val_acc and epoch > 5:
-            torch.save(model.state_dict(), os.path.join(args.output_dir, args.model_config + "_best.pth"))
+            torch.save(model.state_dict(), os.path.join(args.weights_dir, args.model_config + "_best.pth"))
             max_accuracy = val_acc
 
-    torch.save(model.state_dict(), os.path.join(args.output_dir, args.model_config + "_last.pth"))
+    torch.save(model.state_dict(), os.path.join(args.weights_dir, args.model_config + "_last.pth"))
     plot_training_loss(train_losses, val_losses, args)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('SAC model training and evaluation script', parents=[get_args_parser()])
+    parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', parents=[get_args_parser()])
     args = parser.parse_args()
-    if args.output_dir:
-        os.makedirs(args.output_dir, exist_ok=True)
+    if args.weights_dir:
+        os.makedirs(args.weights_dir, exist_ok=True)
     main(args)

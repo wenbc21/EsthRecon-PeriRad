@@ -10,6 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+from sklearn import metrics
 
 
 def read_sac_data(root: str, split: str):
@@ -166,6 +167,20 @@ def get_mean_std(path: str) :
     return mean, std
 
 
+def tensor2img(tensor,heatmap=False,shape=(224,224)):
+    tensor = tensor.cpu()
+    np_arr=tensor.detach().numpy()#[0]
+    #对数据进行归一化
+    if np_arr.max()>1 or np_arr.min()<0:
+        np_arr=np_arr-np_arr.min()
+        np_arr=np_arr/np_arr.max()
+    #np_arr=(np_arr*255).astype(np.uint8)
+    if np_arr.shape[0]==1:
+        np_arr=np.concatenate([np_arr,np_arr,np_arr],axis=0)
+    np_arr=np_arr.transpose((1,2,0))
+    return np_arr
+
+
 def plot_training_loss(train_losses, val_losses, args) :
     x = np.linspace(1, args.epochs, args.epochs)
     plt.plot(x, np.array(train_losses), c='r', ls ='-',label = "train_loss")
@@ -175,4 +190,89 @@ def plot_training_loss(train_losses, val_losses, args) :
     plt.ylim((0.0, 2.0))
     plt.grid()
     plt.legend()
-    plt.savefig(os.path.join(args.result_dir, args.model_config + "_train_loss.png"))
+    plt.savefig(os.path.join(args.results_dir, args.model_config + "_train_loss.png"))
+    
+
+def plot_confusion_matrix(y_true, y_pred, labels_name, title=None, thresh=0.5, axis_labels=None, s=""):
+    # 利用sklearn中的函数生成混淆矩阵并归一化
+    
+    y_p = []
+    for i in y_pred :
+        if i > thresh :
+            y_p.append(1)
+        else: 
+            y_p.append(0)
+    y_pred = y_p
+    
+    cm = metrics.confusion_matrix(y_true, y_pred, labels=labels_name, sample_weight=None)  # 生成混淆矩阵 
+    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]  # 归一化
+
+    # 画图，如果希望改变颜色风格，可以改变此部分的cmap=pl.get_cmap('Blues')处
+    plt.imshow(cm, interpolation='nearest', cmap=plt.get_cmap('Blues'))
+    plt.colorbar()  # 绘制图例
+
+    # 图像标题
+    if title is not None:
+        plt.title(title)
+    # 绘制坐标
+    num_local = np.array(range(len(labels_name)))
+    if axis_labels is None:
+        axis_labels = ["N", "Y"]
+    plt.xticks(num_local, axis_labels)  # 将标签印在x轴坐标上， 并倾斜45度
+    plt.yticks(num_local, axis_labels)  # 将标签印在y轴坐标上
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+    # 将百分比打印在相应的格子内，大于thresh的用白字，小于的用黑字
+    for i in range(np.shape(cm)[0]):
+        for j in range(np.shape(cm)[1]):
+            if int(cm[i][j] * 100 + 0.5) > 0:
+                plt.text(j, i, format(int(cm[i][j] * 100 + 0.5), 'd') + '%',
+                        ha="center", va="center",
+                        color="white" if cm[i][j] > thresh else "black")  # 如果要更改颜色风格，需要同时更改此行
+    # 显示
+    plt.savefig(s)
+
+
+def plot_test_metrics(test_images_label, test_images_predict, results_dir, model_config) :
+    # AUROC
+    fpr1, tpr1, thresholds = metrics.roc_curve(test_images_label, test_images_predict)
+    roc_auc1 = metrics.auc(fpr1, tpr1)  # the value of roc_auc1
+    print(roc_auc1)
+    plt.plot(fpr1, tpr1, 'r', label='AUROC = %0.4f' % roc_auc1)
+    plt.plot([0.0, 1.0], [0.0, 1.0], 'gray', linestyle='--')
+    plt.legend(loc='lower right')
+    plt.xlim([-0.05, 1.05])  # the range of x-axis
+    plt.ylim([-0.05, 1.05])  # the range of y-axis
+    plt.xlabel('False Positive Rate')  # the name of x-axis
+    plt.ylabel('True Positive Rate')  # the name of y-axis
+    plt.title(model_config + ' AUROC')  # the title of figure
+    plt.savefig(os.path.join(results_dir, model_config + "_AUROC.png"))
+    # plt.show()
+    plt.close()
+
+    # AUPRC
+    precision1, recall1, _ = metrics.precision_recall_curve(test_images_label, test_images_predict)
+    aupr1 = metrics.auc(recall1, precision1)  # the value of roc_auc1
+    print(aupr1)
+    plt.plot(recall1, precision1, 'b', label='AUPRC = %0.4f' % aupr1)
+    plt.plot([0.0, 1.0], [1.0, 0.0], 'gray', linestyle='--')
+    plt.legend(loc='lower left')
+    plt.xlim([-0.05, 1.05])  # the range of x-axis
+    plt.ylim([-0.05, 1.05])  # the range of y-axis
+    plt.xlabel('Recall')  # the name of x-axis
+    plt.ylabel('Precision')  # the name of y-axis
+    plt.title(model_config + ' AUPRC')  # the title of figure
+    plt.savefig(os.path.join(results_dir, model_config + "_AUPRC.png"))
+    # plt.show()
+    plt.close()
+
+    plot_confusion_matrix(
+        test_images_label, 
+        test_images_predict, 
+        [0, 1], 
+        title=model_config + " Confusion Matrix", 
+        thresh=0.5, 
+        axis_labels=None, 
+        s=os.path.join(results_dir, model_config + "_Confusion_Matrix.png")
+    )
