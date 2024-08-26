@@ -6,7 +6,6 @@ from PIL import Image
 from torchvision import transforms
 import matplotlib.pyplot as plt
 
-from model.ConvNeXt import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
 from model.model_zoo import model_dict
 import glob
 
