@@ -14,7 +14,7 @@ def get_args_parser():
     parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--num_workers', type=int, default=8)
     parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--weight_decay', type=float, default=5e-2)
