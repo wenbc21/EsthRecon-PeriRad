@@ -3,7 +3,7 @@ import torch
 from torchvision import transforms
 from torch.utils.data import Dataset
 
-class SACDataSet(Dataset):
+class MyDataSet(Dataset):
 
     def __init__(self, images_path: list, images_class: list, is_train: bool, mean, std):
         self.images_path = images_path

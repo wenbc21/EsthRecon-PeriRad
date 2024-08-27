@@ -11,12 +11,13 @@ from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
 from model.model_zoo import model_dict
-from utils import read_sac_data, plot_test_metrics, tensor2img
+from utils import read_dataset, plot_test_metrics, tensor2img
 
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC model testing script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
-    parser.add_argument('--data_path', type=str, default="dataset/Task3clsAug")
+    parser.add_argument('--task', type=str, default="Task2")
+    parser.add_argument('--data_path', type=str, default="dataset/Task2clsbase")
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
     parser.add_argument('--model_config', type=str, default='ResNet50')
@@ -28,9 +29,17 @@ def main(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"using {device} device.")
     
-    test_images_path, test_images_label = read_sac_data(args.data_path, "test")
+    # load dataset
+    test_images_path, test_images_label = read_dataset(args.data_path, "test")
     test_images_predict = []
+    
+    # read class_indict
+    json_path = os.path.join(args.data_path, 'class_indices.json')
+    assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
+    with open(json_path, "r") as f:
+        class_indict = json.load(f)
 
+    # transform
     data_transform = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
@@ -38,17 +47,12 @@ def main(args):
         transforms.Normalize([0.29204324, 0.29204324, 0.29204324], [0.29269517, 0.29269517, 0.29269517])
     ])
 
+    # inference
     for img_path, image_label in zip(test_images_path, test_images_label) :
         # load image
         img = Image.open(img_path)
         img = data_transform(img)
         img = torch.unsqueeze(img, dim=0)
-
-        # read class_indict
-        json_path = 'dataset/class_indices.json'
-        assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
-        with open(json_path, "r") as f:
-            class_indict = json.load(f)
 
         # create model
         model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
@@ -79,15 +83,21 @@ def main(args):
             #         imggrad.save(f'./cls_model/ResNet/results/grad_cam/{os.path.split(img_path)[-1]}')
             # torch.set_grad_enabled(False)
         
+        # result
         print("label: {}, img_path: {}, class: {}, prob: {:.3}".format(
             class_indict[str(image_label)], os.path.split(img_path)[-1], class_indict[str(predict_class)], predict[predict_class].numpy()
         ))
-        
+    
+    # visualize
     plot_test_metrics(test_images_label, test_images_predict, args.results_dir, args.model_config)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('SAC model testing script for image classification', parents=[get_args_parser()])
     args = parser.parse_args()
+    if args.weights_dir:
+        args.weights_dir = os.path.join(args.weights_dir, args.task)
+        os.makedirs(args.weights_dir, exist_ok=True)
     if args.results_dir:
+        args.results_dir = os.path.join(args.results_dir, args.task)
         os.makedirs(args.results_dir, exist_ok=True)
     main(args)

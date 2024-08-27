@@ -4,11 +4,11 @@ import argparse
 import torch
 import torch.optim as optim
 
-from dataset import SACDataSet
+from dataset import MyDataSet
 from model.model_zoo import model_dict
 
 from engine import train_one_epoch, evaluate
-from utils import read_sac_data, create_lr_scheduler, get_params_groups, get_mean_std, plot_training_loss
+from utils import read_dataset, create_lr_scheduler, get_params_groups, get_mean_std, plot_training_loss
 
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', add_help=False)
@@ -18,7 +18,8 @@ def get_args_parser():
     parser.add_argument('--num_workers', type=int, default=8)
     parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--weight_decay', type=float, default=5e-2)
-    parser.add_argument('--data_path', type=str, default="dataset/Task3clsAug")
+    parser.add_argument('--task', type=str, default="Task2")
+    parser.add_argument('--data_path', type=str, default="dataset/Task2clsbase")
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
     parser.add_argument('--model_config', type=str, default='ResNet50')
@@ -33,12 +34,12 @@ def main(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"using {device} device.")
 
-    train_images_path, train_images_label = read_sac_data(args.data_path, "train")
-    val_images_path, val_images_label = read_sac_data(args.data_path, "val")
-
+    # load dataset
+    train_images_path, train_images_label = read_dataset(args.data_path, "train")
+    val_images_path, val_images_label = read_dataset(args.data_path, "val")
     mean, std = get_mean_std(train_images_path)
 
-    train_dataset = SACDataSet(
+    train_dataset = MyDataSet(
         images_path=train_images_path,
         images_class=train_images_label,
         is_train = True, 
@@ -46,7 +47,7 @@ def main(args):
         std = std
     )
 
-    val_dataset = SACDataSet(
+    val_dataset = MyDataSet(
         images_path=val_images_path,
         images_class=val_images_label,
         is_train = False, 
@@ -54,6 +55,7 @@ def main(args):
         std = std
     )
 
+    # build dataloader
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -72,6 +74,7 @@ def main(args):
         collate_fn=val_dataset.collate_fn
     )
 
+    # build model
     model = model_dict[args.model_config](num_classes=args.num_classes)
 
     if args.pretrained != "":
@@ -96,10 +99,11 @@ def main(args):
     lr_scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs,
                                        warmup=True, warmup_epochs=5)
 
+    # train
     train_losses = []
     val_losses = []
-    
     max_accuracy = 0.0
+
     for epoch in range(args.epochs):
         # train
         train_loss, train_acc = train_one_epoch(
@@ -119,14 +123,17 @@ def main(args):
             epoch=epoch
         )
         
+        # logging
         train_losses.append(train_loss)
         val_losses.append(val_loss)
         print("[epoch {}] accuracy: {}".format(epoch, round(val_acc, 3)))
 
+        # save model
         if max_accuracy <= val_acc and epoch > 5:
             torch.save(model.state_dict(), os.path.join(args.weights_dir, args.model_config + "_best.pth"))
             max_accuracy = val_acc
 
+    # finish
     torch.save(model.state_dict(), os.path.join(args.weights_dir, args.model_config + "_last.pth"))
     plot_training_loss(train_losses, val_losses, args)
 
@@ -135,5 +142,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', parents=[get_args_parser()])
     args = parser.parse_args()
     if args.weights_dir:
+        args.weights_dir = os.path.join(args.weights_dir, args.task)
         os.makedirs(args.weights_dir, exist_ok=True)
+    if args.results_dir:
+        args.results_dir = os.path.join(args.results_dir, args.task)
+        os.makedirs(args.results_dir, exist_ok=True)
     main(args)

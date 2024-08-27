@@ -13,19 +13,19 @@ from PIL import Image
 from sklearn import metrics
 
 
-def read_sac_data(root: str, split: str):
+def read_dataset(ori_root: str, split: str):
     # random.seed(0)  # 保证随机结果可复现
-    root = os.path.join(root, split)
+    root = os.path.join(ori_root, split)
     assert os.path.exists(root), "dataset root: {} does not exist.".format(root)
 
     # 遍历文件夹，一个文件夹对应一个类别
-    flower_class = [cla for cla in os.listdir(root) if os.path.isdir(os.path.join(root, cla))]
+    classes = [cla for cla in os.listdir(root) if os.path.isdir(os.path.join(root, cla))]
     # 排序，保证各平台顺序一致
-    flower_class.sort()
+    classes.sort()
     # 生成类别名称以及对应的数字索引
-    class_indices = dict((k, v) for v, k in enumerate(flower_class))
+    class_indices = dict((k, v) for v, k in enumerate(classes))
     json_str = json.dumps(dict((val, key) for key, val in class_indices.items()), indent=4)
-    with open('./dataset/class_indices.json', 'w') as json_file:
+    with open(os.path.join(ori_root, 'class_indices.json'), 'w') as json_file:
         json_file.write(json_str)
 
     images_path = []  # 存储所有图片路径
@@ -33,7 +33,7 @@ def read_sac_data(root: str, split: str):
     every_class_num = []  # 存储每个类别的样本总数
     supported = [".jpg", ".JPG", ".png", ".PNG"]  # 支持的文件后缀类型
     # 遍历每个文件夹下的文件
-    for cla in flower_class:
+    for cla in classes:
         cla_path = os.path.join(root, cla)
         # 遍历获取supported支持的所有文件路径
         images = [os.path.join(root, cla, i) for i in os.listdir(cla_path)
