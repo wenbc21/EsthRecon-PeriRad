@@ -3,27 +3,29 @@ import argparse
 
 import torch
 import torch.optim as optim
+import torch.optim.lr_scheduler as lr_scheduler
 
 from dataset import MyDataSet
 from model.model_zoo import model_dict
 
 from engine import train_one_epoch, evaluate
 from utils import read_dataset, create_lr_scheduler, get_params_groups, get_mean_std, plot_training_loss
+from model.DenseNet import load_state_dict
 
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
-    parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--num_workers', type=int, default=8)
     parser.add_argument('--lr', type=float, default=5e-4)
-    parser.add_argument('--weight_decay', type=float, default=5e-2)
-    parser.add_argument('--task', type=str, default="Task2")
-    parser.add_argument('--data_path', type=str, default="dataset/Task2clsbase")
+    parser.add_argument('--weight_decay', type=float, default=1e-3)
+    parser.add_argument('--task', type=str, default="Task3")
+    parser.add_argument('--data_path', type=str, default="dataset/Task3")
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
-    parser.add_argument('--model_config', type=str, default='ResNet50')
-    parser.add_argument('--pretrained', type=str, default='', help='initial weights path')
+    parser.add_argument('--model_config', type=str, default='ConvNeXt_base')
+    parser.add_argument('--pretrained', type=str, default='pretrained/convnext_base.pth', help='initial weights path')
     parser.add_argument('--freeze_layers', type=bool, default=False)
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
@@ -35,9 +37,18 @@ def main(args):
     print(f"using {device} device.")
 
     # load dataset
-    train_images_path, train_images_label = read_dataset(args.data_path, "train")
-    val_images_path, val_images_label = read_dataset(args.data_path, "val")
-    mean, std = get_mean_std(train_images_path)
+    fold1_p, fold1_l = read_dataset(args.data_path, "fold1")
+    fold2_p, fold2_l = read_dataset(args.data_path, "fold2")
+    fold3_p, fold3_l = read_dataset(args.data_path, "fold3")
+    fold4_p, fold4_l = read_dataset(args.data_path, "fold4")
+    fold5_p, fold5_l = read_dataset(args.data_path, "fold5")
+    
+    train_images_path = fold1_p + fold2_p + fold3_p + fold4_p
+    train_images_label = fold1_l + fold2_l + fold3_l + fold4_l
+    val_images_path = fold5_p
+    val_images_label = fold5_l
+    
+    mean, std = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225] if args.pretrained != "" else get_mean_std(train_images_path)
 
     train_dataset = MyDataSet(
         images_path=train_images_path,
@@ -73,17 +84,45 @@ def main(args):
         num_workers=args.num_workers,
         collate_fn=val_dataset.collate_fn
     )
+    
+    # # ResNet
+    # model = model_dict[args.model_config]()
+    # if args.pretrained != "":
+    #     assert os.path.exists(args.pretrained), "file {} does not exist.".format(args.pretrained)
+    #     model.load_state_dict(torch.load(args.pretrained))
+    #     for param in model.parameters():
+    #         param.requires_grad = False
+    #     in_channel = model.fc.in_features
+    #     model.fc = torch.nn.Linear(in_channel, args.num_classes)
+    
+    # # DenseNet
+    # model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
+    # if args.pretrained != "":
+    #     if os.path.exists(args.pretrained):
+    #         load_state_dict(model, args.pretrained)
+    #     else:
+    #         raise FileNotFoundError("not found weights file: {}".format(args.pretrained))
+    
+    # # EfficientNet
+    # model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
+    # if args.pretrained != "":
+    #     if os.path.exists(args.pretrained):
+    #         pretrained_dict = torch.load(args.pretrained, map_location=device)
+    #         load_weights_dict = {k: v for k, v in pretrained_dict.items()
+    #                              if model.state_dict()[k].numel() == v.numel()}
+    #         model.load_state_dict(load_weights_dict, strict=False)
+    #     else:
+    #         raise FileNotFoundError("not found weights file: {}".format(args.weights))
 
-    # build model
-    model = model_dict[args.model_config](num_classes=args.num_classes)
-
+    # ConvNeXt
+    model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
     if args.pretrained != "":
         assert os.path.exists(args.pretrained), "pretrained file: '{}' not exist.".format(args.pretrained)
         pretrained_dict = torch.load(args.pretrained, map_location=device)["model"]
         for k in list(pretrained_dict.keys()):
             if "head" in k:
                 del pretrained_dict[k]
-        print(model.load_state_dict(pretrained_dict, strict=False))
+        model.load_state_dict(pretrained_dict, strict=False)
 
     if args.freeze_layers:
         for name, para in model.named_parameters():
@@ -91,13 +130,13 @@ def main(args):
                 para.requires_grad_(False)
             else:
                 print("training {}".format(name))
-                
+    
     model.to(device)
 
     parameters = get_params_groups(model, weight_decay=args.weight_decay)
-    optimizer = optim.AdamW(parameters, lr=args.lr, weight_decay=args.weight_decay)
-    lr_scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs,
-                                       warmup=True, warmup_epochs=5)
+    optimizer = optim.SGD(parameters, lr=args.lr, momentum=0.9, weight_decay=args.weight_decay, nesterov=True) # DenseNet, EfficientNet, ConvNeXt
+    # optimizer = optim.Adam(parameters, lr=args.lr) # ResNet
+    lr_scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True, warmup_epochs=2)
 
     # train
     train_losses = []
@@ -145,6 +184,6 @@ if __name__ == '__main__':
         args.weights_dir = os.path.join(args.weights_dir, args.task)
         os.makedirs(args.weights_dir, exist_ok=True)
     if args.results_dir:
-        args.results_dir = os.path.join(args.results_dir, args.task)
+        args.results_dir = os.path.join(args.results_dir, args.task, "train")
         os.makedirs(args.results_dir, exist_ok=True)
     main(args)

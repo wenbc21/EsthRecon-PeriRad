@@ -11,7 +11,13 @@ class MyDataSet(Dataset):
 
         if is_train :
             self.transform = transforms.Compose([
+                transforms.Resize(256),
                 transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomVerticalFlip(p=0.5),
+                transforms.ColorJitter(brightness=0.25, contrast=0.25),
+                transforms.RandomInvert(p=0.2),
+                transforms.RandomRotation(15),
                 transforms.ToTensor(),
                 transforms.Normalize(mean, std)
             ])
