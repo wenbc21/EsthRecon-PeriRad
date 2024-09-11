@@ -6,9 +6,9 @@ import torch
 import numpy as np
 from PIL import Image
 from torchvision import transforms
-from pytorch_grad_cam import GradCAM
-from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
-from pytorch_grad_cam.utils.image import show_cam_on_image
+# from pytorch_grad_cam import GradCAM
+# from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+# from pytorch_grad_cam.utils.image import show_cam_on_image
 
 from model.model_zoo import model_dict
 from utils import read_dataset, plot_test_metrics, tensor2img
@@ -17,10 +17,10 @@ def get_args_parser():
     parser = argparse.ArgumentParser('SAC model testing script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
     parser.add_argument('--task', type=str, default="Task2")
-    parser.add_argument('--data_path', type=str, default="dataset/Task2clsbase")
+    parser.add_argument('--data_path', type=str, default="dataset/Task2")
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
-    parser.add_argument('--model_config', type=str, default='ResNet50')
+    parser.add_argument('--model_config', type=str, default='ConvNeXt_base')
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
     return parser
@@ -38,13 +38,16 @@ def main(args):
     assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
     with open(json_path, "r") as f:
         class_indict = json.load(f)
+        
+    mean = [0.485, 0.456, 0.406]
+    std = [0.229, 0.224, 0.225]
 
     # transform
     data_transform = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
-        transforms.Normalize([0.29204324, 0.29204324, 0.29204324], [0.29269517, 0.29269517, 0.29269517])
+        transforms.Normalize(mean, std)
     ])
 
     # inference
@@ -98,6 +101,6 @@ if __name__ == '__main__':
         args.weights_dir = os.path.join(args.weights_dir, args.task)
         os.makedirs(args.weights_dir, exist_ok=True)
     if args.results_dir:
-        args.results_dir = os.path.join(args.results_dir, args.task)
+        args.results_dir = os.path.join(args.results_dir, args.task, "evaluate")
         os.makedirs(args.results_dir, exist_ok=True)
     main(args)

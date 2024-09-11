@@ -6,6 +6,9 @@ import torch.nn as nn
 import torch
 from torch import Tensor
 
+# pretrain model
+# https://pan.baidu.com/s/1uZX36rvrfEss-JGj4yfzbQ
+# 5gu1
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
     """
