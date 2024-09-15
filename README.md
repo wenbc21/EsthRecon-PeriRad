@@ -1,12 +1,20 @@
 # SAC
 
-小样本下基于深度学习的前牙种植美学风险分类决策
-
 Esthetic Risk Assessment of Anterior Implant Restoration
 Based on Deep Learning with Small Samples
 
-## 项目结构
+## Structure
 
-一份目标检测代码 - YOLOX
+Detection - YOLOX, CenterNet, EfficientDet, DiffusionDet
 
-四份图像分类代码 - ResNet, DenseNet, EfficientNet, ConvNeXt
+Classification - ResNet, DenseNet, EfficientNet, ConvNeXt
+
+Segmentation - nnU-Net
+
+## Task
+
+Task1: Detection -> Classification
+
+Task2: Segmentation -> Classification
+
+Task3: Classification
