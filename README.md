@@ -9,7 +9,7 @@ Detection - YOLOX, CenterNet, EfficientDet, DiffusionDet
 
 Classification - ResNet, DenseNet, EfficientNet, ConvNeXt
 
-Segmentation - nnU-Net
+Segmentation - nnUNet
 
 ## Task
 
