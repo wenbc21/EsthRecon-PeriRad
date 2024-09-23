@@ -9,8 +9,8 @@ image_dirs = [item.path for item in os.scandir("dataset") if item.is_dir()]
 
 for imd in image_dirs :
     sig = os.path.split(imd)[-1].split("_")[0]
-    mask = os.path.join(imd, f"{sig}_YS_T2_mask.png")
-    source = os.path.join(imd, f"{sig}_YS_T2_source.png")
+    mask = os.path.join(imd, f"{sig}_mask.png")
+    source = os.path.join(imd, f"{sig}_source.png")
     shutil.copyfile(source, os.path.join("nnUNet_raw", "source", f"{sig}_YS_T2_0000.png"))
     
     img = Image.open(mask)
