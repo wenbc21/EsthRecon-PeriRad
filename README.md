@@ -15,6 +15,6 @@ Segmentation - nnUNet
 
 Task1: Detection -> Classification
 
-Task2: Segmentation -> Classification
+Task2: Segmentation
 
 Task3: Classification

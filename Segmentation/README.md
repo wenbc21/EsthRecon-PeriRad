@@ -20,7 +20,7 @@ put raw testset file in the directory.
 
 ### Step 2: transform data into nnUNet format
 
-run labelme2nnunet.py and test2nnunet.py, the results will be stored in nnUNet_raw and nnUNet_test directory.
+run labelme2nnunet.py, the results will be stored in nnUNet_raw and nnUNet_test directory.
 
 ### Step 3: nnUNet training
 
@@ -30,10 +30,6 @@ train a nnUNet model using data in nnUNet_raw
 
 inference images in nnUNet_test using trained nnUNet model
 
-### Step 5: postprocess and visualize
+### Step 5: final classification
 
-put nnUNet results in the directory, run postprocess.py to post process and visualize the results
-
-### Step 6: final classification
-
-TODO
+put nnUNet results in the directory, run main.py to post process and visualize the results

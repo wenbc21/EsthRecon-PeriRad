@@ -18,3 +18,12 @@ for imd in image_dirs :
     img[img > 0] = 1
     img = Image.fromarray(img)
     img.save(os.path.join("nnUNet_raw", "mask", f"{sig}_YS_T2.png"))
+
+
+for cls in ["H", "L"] :
+    os.makedirs(f"nnUNet_test/{cls}", exist_ok=True)
+    image_dirs = [item.path for item in os.scandir(f"test/{cls}") if item.is_file()]
+    for imd in image_dirs :
+        sig = os.path.split(imd)[-1].split(".")[0]
+        shutil.copyfile(imd, f"nnUNet_test/{cls}/{sig}_0000.png")
+    
