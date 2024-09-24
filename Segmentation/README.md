@@ -6,8 +6,6 @@ For Task2
 
 [json_to_dataset](json_to_dataset.py) - transform labelme data to dataset
 
-[labelme_to_nnunet](labelme_to_nnunet.py) - data preprocess for nnUNet
-
 [main.py](main.py) - post process, visualization and get final result
 
 ## Workflow
