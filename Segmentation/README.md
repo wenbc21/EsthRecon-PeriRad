@@ -4,32 +4,26 @@ For Task2
 
 ## Structure
 
-labelme2nnunet - data preprocess for nnUNet training
+[json_to_dataset](json_to_dataset.py) - transform labelme data to dataset
 
-test2nnunet - data preprocess for nnUNet inference
+[labelme_to_nnunet](labelme_to_nnunet.py) - data preprocess for nnUNet
 
-postprocess - post process for nnUNet results
+[main.py](main.py) - post process, visualization and get final result
 
 ## Workflow
 
 ### Step 1: prepare data
 
-use labelme to label sementic segmentation for Task2, use '''labelme_json_to_dataset''' to automatically build the dataset. 
+use labelme to label sementic segmentation for Task2, run [json_to_dataset](json_to_dataset.py) to automatically build the dataset. 
 
-put raw testset file in the directory.
-
-### Step 2: transform data into nnUNet format
-
-run labelme2nnunet.py, the results will be stored in nnUNet_raw and nnUNet_test directory.
-
-### Step 3: nnUNet training
+### Step 2: nnUNet training
 
 train a nnUNet model using data in nnUNet_raw
 
-### Step 4: nnUNet inference
+### Step 3: nnUNet inference
 
-inference images in nnUNet_test using trained nnUNet model
+inference images in testset using trained nnUNet model
 
-### Step 5: final classification
+### Step 4: final classification
 
-put nnUNet results in the directory, run main.py to post process and visualize the results
+put nnUNet results in the directory, run [main.py](main.py) to post process and visualize the results

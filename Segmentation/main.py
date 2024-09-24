@@ -41,20 +41,20 @@ for cls in ["H", "L"] :
         else :
             print(f"{cls}/{sig}_YS_T2")
         
-        # res = cv2.cvtColor(res, cv2.COLOR_GRAY2BGR)
-        # img = np.array(img).astype(np.uint8)
-        # res = np.array(res).astype(np.uint8)
-        # vis = img + res * (75, 0, 0)
-        # for pnt in cnt :
-        #     cv2.circle(vis, pnt[0], 3, (255, 255, 255), 3)
-        # vis = Image.fromarray(np.uint8(vis))
-        # vis.save(f"result_img/vis_seg/{cls}/{sig}_YS_T2_vis_seg.png")
+        res = cv2.cvtColor(res, cv2.COLOR_GRAY2BGR)
+        img = np.array(img).astype(np.uint8)
+        res = np.array(res).astype(np.uint8)
+        vis = img + res * (75, 0, 0)
+        for pnt in cnt :
+            cv2.circle(vis, pnt[0], 3, (255, 255, 255), 3)
+        vis = Image.fromarray(np.uint8(vis))
+        vis.save(f"result_img/vis_seg/{cls}/{sig}_YS_T2_vis_seg.png")
         
-        # vis_ori = img
-        # for pnt in cnt :
-        #     cv2.circle(vis_ori, pnt[0], 3, (255, 255, 255), 3)
-        # vis_ori = Image.fromarray(np.uint8(vis_ori))
-        # vis_ori.save(f"result_img/vis_ori/{cls}/{sig}_YS_T2_vis_ori.png")
+        vis_ori = img
+        for pnt in cnt :
+            cv2.circle(vis_ori, pnt[0], 3, (255, 255, 255), 3)
+        vis_ori = Image.fromarray(np.uint8(vis_ori))
+        vis_ori.save(f"result_img/vis_ori/{cls}/{sig}_YS_T2_vis_ori.png")
         
         cnt = cnt.reshape(4, 2)
         sorted_indices = np.argsort(cnt[:, 1])  # 获取按第二列排序的索引
