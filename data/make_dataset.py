@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
-image_dirs = [item.path for item in os.scandir("YS") if item.is_file()]
+image_dirs = [item.path for item in os.scandir("raw_data/YS") if item.is_file()]
 groundtruth = pd.read_csv("groundtruth.csv").values.tolist()
 
 pat = {}
@@ -21,22 +21,26 @@ random.seed(42)
 # train = 0.64 val = 0.16 test = 0.2
 total = [i+1 for i in range(pat_num)]
 random.shuffle(total)
-fold1 = total[:round(0.16*pat_num)]
-fold2 = total[round(0.16*pat_num):round(0.32*pat_num)]
-fold3 = total[round(0.32*pat_num):round(0.48*pat_num)]
-fold4 = total[round(0.48*pat_num):round(0.64*pat_num)]
-fold5 = total[round(0.64*pat_num):round(0.8*pat_num)]
+# fold1 = total[:round(0.16*pat_num)]
+# fold2 = total[round(0.16*pat_num):round(0.32*pat_num)]
+# fold3 = total[round(0.32*pat_num):round(0.48*pat_num)]
+# fold4 = total[round(0.48*pat_num):round(0.64*pat_num)]
+# fold5 = total[round(0.64*pat_num):round(0.8*pat_num)]
+train = total[:round(0.64*pat_num)]
+val = total[round(0.64*pat_num):round(0.8*pat_num)]
 test = total[round(0.8*pat_num):]
 
 print(total)
-print(fold1)
-print(fold2)
-print(fold3)
-print(fold4)
-print(fold5)
+print(train)
+print(val)
+# print(fold1)
+# print(fold2)
+# print(fold3)
+# print(fold4)
+# print(fold5)
 test.sort()
 print(test)
-# exit()
+exit()
 
 for it in ['fold1', 'fold2', 'fold3', 'fold4', 'fold5', 'test'] :
     os.makedirs(f"dataset/Task1/{it}/Y", exist_ok=True)
