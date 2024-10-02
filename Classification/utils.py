@@ -1,76 +1,12 @@
 import os
-import sys
 import json
-import pickle
 import random
 import math
-
 import torch
-
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from sklearn import metrics
-from torch import nn
-import torch
-from torch.nn import functional as F
-
-
-class FocalLoss(nn.Module):
-    def __init__(self, num_class=2, alpha=0.6, gamma=2, balance_index=0, smooth=None, size_average=True):
-        super(FocalLoss, self).__init__()
-        self.num_class = num_class 
-        self.alpha = alpha 
-        self.gamma = gamma 
-        self.smooth = smooth 
-        self.size_average = size_average
-
-        if self.alpha is None:
-            self.alpha = torch.ones(self.num_class, 1)
-        elif isinstance(self.alpha, (list, np.ndarray)):
-            assert len(self.alpha) == self.num_class
-            self.alpha = torch.FloatTensor(alpha).view(self.num_class, 1)
-            self.alpha = self.alpha / self.alpha.sum()
-        elif isinstance(self.alpha, float):
-            alpha = torch.ones(self.num_class, 1)
-            alpha = alpha * (1 - self.alpha)
-            alpha[balance_index] = self.alpha
-            self.alpha = alpha
-        else:
-            raise TypeError('Not support alpha type')
-        if self.smooth is not None:
-            if self.smooth < 0 or self.smooth > 1.0:
-                raise ValueError('smooth value should be in [0,1]')
-    
-    def forward(self, input, target):
-        logit = F.softmax(input, dim=1)
-        if logit.dim() > 2:
-            logit = logit.view(logit.size(0), logit.size(1), -1)
-            logit = logit.permute(0, 2, 1).contiguous()
-            logit = logit.view(-1, logit.size(-1))
-        target = target.view(-1, 1)
-        epsilon = 1e-10
-        alpha = self.alpha
-        if alpha.device != input.device:
-            alpha = alpha.to(input.device)
-        idx = target.cpu().long()
-        one_hot_key = torch.FloatTensor(target.size(0), self.num_class).zero_()
-        one_hot_key = one_hot_key.scatter_(1, idx, 1)
-        if one_hot_key.device != logit.device:
-            one_hot_key = one_hot_key.to(logit.device)
-        if self.smooth:
-            one_hot_key = torch.clamp(
-                one_hot_key, self.smooth, 1.0 - self.smooth)
-        pt = (one_hot_key * logit).sum(1) + epsilon
-        logpt = pt.log()
-        gamma = self.gamma 
-        alpha = alpha[idx]
-        loss = -1 * alpha * torch.pow((1 - pt), gamma) * logpt
-        if self.size_average:
-            loss = loss.mean()
-        else:
-            loss = loss.sum()
-        return loss 
 
 
 def read_dataset(ori_root: str, split: str):
@@ -115,41 +51,6 @@ def read_dataset(ori_root: str, split: str):
 
     return images_path, images_label
 
-
-def plot_data_loader_image(data_loader):
-    batch_size = data_loader.batch_size
-    plot_num = min(batch_size, 4)
-
-    json_path = './class_indices.json'
-    assert os.path.exists(json_path), json_path + " does not exist."
-    json_file = open(json_path, 'r')
-    class_indices = json.load(json_file)
-
-    for data in data_loader:
-        images, labels = data
-        for i in range(plot_num):
-            # [C, H, W] -> [H, W, C]
-            img = images[i].numpy().transpose(1, 2, 0)
-            # 反Normalize操作
-            img = (img * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]) * 255
-            label = labels[i].item()
-            plt.subplot(1, plot_num, i+1)
-            plt.xlabel(class_indices[str(label)])
-            plt.xticks([])  # 去掉x轴的刻度
-            plt.yticks([])  # 去掉y轴的刻度
-            plt.imshow(img.astype('uint8'))
-        plt.show()
-
-
-def write_pickle(list_info: list, file_name: str):
-    with open(file_name, 'wb') as f:
-        pickle.dump(list_info, f)
-
-
-def read_pickle(file_name: str) -> list:
-    with open(file_name, 'rb') as f:
-        info_list = pickle.load(f)
-        return info_list
 
 def create_lr_scheduler(
     optimizer,
@@ -298,7 +199,6 @@ def plot_test_metrics(test_images_label, test_images_predict, results_dir, model
     # AUROC
     fpr1, tpr1, thresholds = metrics.roc_curve(test_images_label, test_images_predict)
     roc_auc1 = metrics.auc(fpr1, tpr1)  # the value of roc_auc1
-    print(roc_auc1)
     plt.plot(fpr1, tpr1, 'r', label='AUROC = %0.4f' % roc_auc1)
     plt.plot([0.0, 1.0], [0.0, 1.0], 'gray', linestyle='--')
     plt.legend(loc='lower right')
@@ -314,7 +214,6 @@ def plot_test_metrics(test_images_label, test_images_predict, results_dir, model
     # AUPRC
     precision1, recall1, _ = metrics.precision_recall_curve(test_images_label, test_images_predict)
     aupr1 = metrics.auc(recall1, precision1)  # the value of roc_auc1
-    print(aupr1)
     plt.plot(recall1, precision1, 'b', label='AUPRC = %0.4f' % aupr1)
     plt.plot([0.0, 1.0], [1.0, 0.0], 'gray', linestyle='--')
     plt.legend(loc='lower left')
@@ -336,3 +235,5 @@ def plot_test_metrics(test_images_label, test_images_predict, results_dir, model
         axis_labels=None, 
         s=os.path.join(results_dir, model_config + "_Confusion_Matrix.png")
     )
+
+    return roc_auc1, aupr1

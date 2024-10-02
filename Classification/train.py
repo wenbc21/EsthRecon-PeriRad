@@ -17,15 +17,15 @@ def get_args_parser():
     parser.add_argument('--num_classes', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--batch_size', type=int, default=8)
-    parser.add_argument('--num_workers', type=int, default=8)
+    parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--weight_decay', type=float, default=1e-3)
     parser.add_argument('--task', type=str, default="Task3")
     parser.add_argument('--data_path', type=str, default="dataset/Task3")
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
-    parser.add_argument('--model_config', type=str, default='ConvNeXt_base')
-    parser.add_argument('--pretrained', type=str, default='pretrained/convnext_base.pth', help='initial weights path')
+    parser.add_argument('--model_config', type=str, default='DenseNet161')
+    parser.add_argument('--pretrained', type=str, default='pretrained/densenet161.pth', help='initial weights path')
     parser.add_argument('--freeze_layers', type=bool, default=False)
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
@@ -37,16 +37,8 @@ def main(args):
     print(f"using {device} device.")
 
     # load dataset
-    fold1_p, fold1_l = read_dataset(args.data_path, "fold1")
-    fold2_p, fold2_l = read_dataset(args.data_path, "fold2")
-    fold3_p, fold3_l = read_dataset(args.data_path, "fold3")
-    fold4_p, fold4_l = read_dataset(args.data_path, "fold4")
-    fold5_p, fold5_l = read_dataset(args.data_path, "fold5")
-    
-    train_images_path = fold1_p + fold2_p + fold3_p + fold4_p
-    train_images_label = fold1_l + fold2_l + fold3_l + fold4_l
-    val_images_path = fold5_p
-    val_images_label = fold5_l
+    train_images_path, train_images_label = read_dataset(args.data_path, "train")
+    val_images_path, val_images_label = read_dataset(args.data_path, "val")
     
     mean, std = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225] if args.pretrained != "" else get_mean_std(train_images_path)
 
@@ -95,13 +87,13 @@ def main(args):
     #     in_channel = model.fc.in_features
     #     model.fc = torch.nn.Linear(in_channel, args.num_classes)
     
-    # # DenseNet
-    # model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
-    # if args.pretrained != "":
-    #     if os.path.exists(args.pretrained):
-    #         load_state_dict(model, args.pretrained)
-    #     else:
-    #         raise FileNotFoundError("not found weights file: {}".format(args.pretrained))
+    # DenseNet
+    model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
+    if args.pretrained != "":
+        if os.path.exists(args.pretrained):
+            load_state_dict(model, args.pretrained)
+        else:
+            raise FileNotFoundError("not found weights file: {}".format(args.pretrained))
     
     # # EfficientNet
     # model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
@@ -114,15 +106,15 @@ def main(args):
     #     else:
     #         raise FileNotFoundError("not found weights file: {}".format(args.weights))
 
-    # ConvNeXt
-    model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
-    if args.pretrained != "":
-        assert os.path.exists(args.pretrained), "pretrained file: '{}' not exist.".format(args.pretrained)
-        pretrained_dict = torch.load(args.pretrained, map_location=device)["model"]
-        for k in list(pretrained_dict.keys()):
-            if "head" in k:
-                del pretrained_dict[k]
-        model.load_state_dict(pretrained_dict, strict=False)
+    # # ConvNeXt
+    # model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
+    # if args.pretrained != "":
+    #     assert os.path.exists(args.pretrained), "pretrained file: '{}' not exist.".format(args.pretrained)
+    #     pretrained_dict = torch.load(args.pretrained, map_location=device)["model"]
+    #     for k in list(pretrained_dict.keys()):
+    #         if "head" in k:
+    #             del pretrained_dict[k]
+    #     model.load_state_dict(pretrained_dict, strict=False)
 
     if args.freeze_layers:
         for name, para in model.named_parameters():
@@ -136,7 +128,7 @@ def main(args):
     parameters = get_params_groups(model, weight_decay=args.weight_decay)
     optimizer = optim.SGD(parameters, lr=args.lr, momentum=0.9, weight_decay=args.weight_decay, nesterov=True) # DenseNet, EfficientNet, ConvNeXt
     # optimizer = optim.Adam(parameters, lr=args.lr) # ResNet
-    lr_scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True, warmup_epochs=2)
+    lr_scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True, warmup_epochs=3)
 
     # train
     train_losses = []

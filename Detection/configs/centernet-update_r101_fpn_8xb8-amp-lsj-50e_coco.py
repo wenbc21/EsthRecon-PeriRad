@@ -1,4 +1,4 @@
-_base_ = './centernet-update_r50_fpn_8xb8-amp-lsj-200e_coco.py'
+_base_ = './centernet-update_r50_fpn_8xb8-amp-lsj-50e_coco.py'
 
 model = dict(
     backbone=dict(

@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from PIL import Image
 from torchvision import transforms
+from sklearn import metrics
 # from pytorch_grad_cam import GradCAM
 # from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 # from pytorch_grad_cam.utils.image import show_cam_on_image
@@ -16,11 +17,11 @@ from utils import read_dataset, plot_test_metrics, tensor2img
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC model testing script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
-    parser.add_argument('--task', type=str, default="Task2")
-    parser.add_argument('--data_path', type=str, default="dataset/Task2")
+    parser.add_argument('--task', type=str, default="Task3")
+    parser.add_argument('--data_path', type=str, default="dataset/Task3")
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
-    parser.add_argument('--model_config', type=str, default='ConvNeXt_base')
+    parser.add_argument('--model_config', type=str, default='densenet161')
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
     return parser
@@ -32,12 +33,15 @@ def main(args):
     # load dataset
     test_images_path, test_images_label = read_dataset(args.data_path, "test")
     test_images_predict = []
+    test_image_class = []
     
     # read class_indict
     json_path = os.path.join(args.data_path, 'class_indices.json')
     assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
     with open(json_path, "r") as f:
         class_indict = json.load(f)
+
+    f = open(f"{args.results_dir}/{args.model_config}_metrics.txt", 'w')
         
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
@@ -72,6 +76,7 @@ def main(args):
             predict = torch.softmax(output, dim=0)
             predict_class = torch.argmax(predict).numpy()
             test_images_predict.append(predict[1])
+            test_image_class.append(predict_class)
             
             # torch.set_grad_enabled(True)
             # with GradCAM(model=model, target_layers=target_layers, use_cuda=True) as cam:
@@ -90,9 +95,24 @@ def main(args):
         print("label: {}, img_path: {}, class: {}, prob: {:.3}".format(
             class_indict[str(image_label)], os.path.split(img_path)[-1], class_indict[str(predict_class)], predict[predict_class].numpy()
         ))
+        f.write("label: {}, img_path: {}, class: {}, prob: {:.3}\n".format(
+            class_indict[str(image_label)], os.path.split(img_path)[-1], class_indict[str(predict_class)], predict[predict_class].numpy()
+        ))
     
+    # metrics
+    accuracy = metrics.accuracy_score(test_images_label, test_image_class)
+    precision = metrics.precision_score(test_images_label, test_image_class)
+    recall = metrics.recall_score(test_images_label, test_image_class)
+    f1 = metrics.f1_score(test_images_label, test_image_class)
+    print(f"accuracy: {accuracy}, precision: {precision}, recall: {recall}, f1:{f1}")
+    f.write(f"accuracy: {accuracy}, precision: {precision}, recall: {recall}, f1:{f1}\n")
     # visualize
-    plot_test_metrics(test_images_label, test_images_predict, args.results_dir, args.model_config)
+    auroc, auprc = plot_test_metrics(test_images_label, test_images_predict, args.results_dir, args.model_config)
+    print(f"AUROC: {auroc}, AUPRC: {auprc}")
+    f.write(f"AUROC: {auroc}, AUPRC: {auprc}\n")
+    # results_json = {"accuracy": accuracy, "precision": precision, "recall": recall, "f1":f1, "auroc": auroc, "auprc": auprc}
+    # with open(f"{args.results_dir}/{args.model_config}_metrics.json","w") as f:
+    #     json.dump(results_json, f, indent=4)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('SAC model testing script for image classification', parents=[get_args_parser()])

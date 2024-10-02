@@ -2,32 +2,28 @@ import shutil
 import os
 import cv2
 import json
+import random
+import pandas as pd
+import numpy as np
 
-
-def convert_labelme_to_coco(ann_file, out_file):
+def convert_labelme_to_coco(raw_file, out_file):
     os.makedirs(out_file, exist_ok=True)
-    files = [item.path for item in os.scandir(ann_file) if item.is_file()]
+    files = [item.path for item in os.scandir(raw_file) if item.is_file()]
     img_files = [f for f in files if f.endswith("jpg")]
     label_files = [f for f in files if f.endswith("json")]
     img_files.sort()
     label_files.sort()
     
-    pat = {}
-    for i in img_files :
-        imgid = os.path.split(i)[-1].split('R')[0]
-        pat[imgid] = 1
-    pat_num = len(pat)
-    img_num = len(img_files)
-    print(pat_num, img_num)
+    df = pd.read_csv("data/groundtruth.csv", encoding="utf-8")
+    pat_id = list({pid.split("R")[0][1:]: 1 for pid in df["id"].to_list()})
+    print(len(pat_id))
 
-    import random
-    random.seed(42)
+    random.seed(75734)
     # train = 0.64 val = 0.16 test = 0.2
-    total = [i+1 for i in range(pat_num)]
-    random.shuffle(total)
-    train = total[:round(0.64*pat_num)]
-    val = total[round(0.64*pat_num):round(0.8*pat_num)]
-    test = total[round(0.8*pat_num):]
+    random.shuffle(pat_id)
+    train = pat_id[:round(0.64*len(pat_id))]
+    val = pat_id[round(0.64*len(pat_id)):round(0.8*len(pat_id))]
+    test = pat_id[round(0.8*len(pat_id)):]
     
     split_compose = {"train":train, "val":val, "test":test}
     for split in ["train", "val", "test"] :
@@ -39,7 +35,7 @@ def convert_labelme_to_coco(ann_file, out_file):
         
         for i in range(len(img_files)) :
             filename = os.path.split(img_files[i])[-1]
-            if int(filename.split("R")[0][1:]) not in split_compose[split] :
+            if filename.split("R")[0][1:] not in split_compose[split] :
                 continue
             shutil.copy(img_files[i], os.path.join(out_file, split, os.path.split(img_files[i])[-1]))
             height, width = cv2.imread(img_files[i]).shape[:2]
@@ -57,10 +53,10 @@ def convert_labelme_to_coco(ann_file, out_file):
                 y1 = label["points"][0][1]
                 y2 = label["points"][1][1]
                 
-                x_min = min(x1, x2)
-                x_max = max(x1, x2)
-                y_min = min(y1, y2)
-                y_max = max(y1, y2)
+                x_min = int(min(x1, x2))
+                x_max = int(max(x1, x2))
+                y_min = int(min(y1, y2))
+                y_max = int(max(y1, y2))
                 
                 poly = [x1, y1, x2, y1, x2, y2, x1, y2]
                 
@@ -94,5 +90,5 @@ def convert_labelme_to_coco(ann_file, out_file):
 
 if __name__ == '__main__':
     
-    convert_labelme_to_coco(ann_file='dataset/Task1',
-                            out_file='dataset/Task1_coco')
+    convert_labelme_to_coco(raw_file='data/raw_data/Task1_labelme',
+                            out_file='data/dataset/Task1')

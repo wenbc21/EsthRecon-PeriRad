@@ -1,19 +1,19 @@
 _base_ = [
-    'mmdet::_base_/datasets/coco_detection.py',
-    'mmdet::_base_/schedules/schedule_1x.py',
-    'mmdet::_base_/default_runtime.py'
+    '../mmdetection/configs/_base_/datasets/coco_detection.py',
+    '../mmdetection/configs/_base_/schedules/schedule_1x.py',
+    '../mmdetection/configs/_base_/default_runtime.py'
 ]
 custom_imports = dict(
     imports=['projects.EfficientDet.efficientdet'], allow_failed_imports=False)
 
-image_size = 896
+image_size = 512
 batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
 ]
 dataset_type = 'CocoDataset'
 evalute_type = 'CocoMetric'
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
-checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b3_3rdparty_8xb32-aa-advprop_in1k_20220119-53b41118.pth'  # noqa
+checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b0_3rdparty_8xb32-aa-advprop_in1k_20220119-26434485.pth'  # noqa
 model = dict(
     type='EfficientDet',
     data_preprocessor=dict(
@@ -25,8 +25,8 @@ model = dict(
         batch_augments=batch_augments),
     backbone=dict(
         type='EfficientNet',
-        arch='b3',
-        drop_path_rate=0.3,
+        arch='b0',
+        drop_path_rate=0.2,
         out_indices=(3, 4, 5),
         frozen_stages=0,
         conv_cfg=dict(type='Conv2dSamePadding'),
@@ -36,18 +36,18 @@ model = dict(
             type='Pretrained', prefix='backbone', checkpoint=checkpoint)),
     neck=dict(
         type='BiFPN',
-        num_stages=6,
-        in_channels=[48, 136, 384],
-        out_channels=160,
+        num_stages=3,
+        in_channels=[40, 112, 320],
+        out_channels=64,
         start_level=0,
         norm_cfg=norm_cfg),
     bbox_head=dict(
         type='EfficientDetSepBNHead',
-        num_classes=80,
+        num_classes=2,
         num_ins=5,
-        in_channels=160,
-        feat_channels=160,
-        stacked_convs=4,
+        in_channels=64,
+        feat_channels=64,
+        stacked_convs=3,
         norm_cfg=norm_cfg,
         anchor_generator=dict(
             type='AnchorGenerator',
@@ -93,8 +93,17 @@ model = dict(
         max_per_img=100))
 
 # dataset settings
+data_root = 'dataset/Task1/'
+metainfo = {
+    'classes': ('N', 'Y'),
+    'palette': [
+        (90, 150, 200),
+        (250, 120, 80),
+    ]
+}
+backend_args=None
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize',
@@ -106,7 +115,7 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(image_size, image_size), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
@@ -118,12 +127,46 @@ test_pipeline = [
 train_dataloader = dict(
     batch_size=16,
     num_workers=8,
-    dataset=dict(type=dataset_type, pipeline=train_pipeline))
-val_dataloader = dict(dataset=dict(type=dataset_type, pipeline=test_pipeline))
-test_dataloader = val_dataloader
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        metainfo=metainfo,
+        ann_file='annotation_coco_train.json',
+        data_prefix=dict(img='train/'),
+        pipeline=train_pipeline))
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        metainfo=metainfo,
+        ann_file='annotation_coco_val.json',
+        data_prefix=dict(img='val/'),
+        pipeline=test_pipeline))
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        metainfo=metainfo,
+        ann_file='annotation_coco_test.json',
+        data_prefix=dict(img='test/'),
+        pipeline=test_pipeline))
 
-val_evaluator = dict(type=evalute_type)
-test_evaluator = val_evaluator
+val_evaluator = dict(
+    type=evalute_type,
+    ann_file=data_root + 'annotation_coco_val.json',
+    metric='bbox',
+    format_only=False,
+    backend_args=backend_args)
+test_evaluator = dict(
+    type=evalute_type,
+    ann_file=data_root + 'annotation_coco_test.json',
+    metric='bbox',
+    format_only=False,
+    backend_args=backend_args)
 
 optim_wrapper = dict(
     optimizer=dict(lr=0.16, weight_decay=4e-5),
@@ -132,23 +175,23 @@ optim_wrapper = dict(
     clip_grad=dict(max_norm=10, norm_type=2))
 
 # learning policy
-max_epochs = 300
+max_epochs = 150
 param_scheduler = [
-    dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=917),
+    dict(type='LinearLR', start_factor=0.1, by_epoch=True, begin=0, end=15),
     dict(
         type='CosineAnnealingLR',
         eta_min=0.0,
         begin=1,
-        T_max=299,
-        end=300,
+        T_max=149,
+        end=150,
         by_epoch=True,
         convert_to_iter_based=True)
 ]
-train_cfg = dict(max_epochs=max_epochs, val_interval=1)
+train_cfg = dict(max_epochs=max_epochs, val_interval=15)
 
 vis_backends = [
     dict(type='LocalVisBackend'),
-    dict(type='TensorboardVisBackend')
+    # dict(type='TensorboardVisBackend')
 ]
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')

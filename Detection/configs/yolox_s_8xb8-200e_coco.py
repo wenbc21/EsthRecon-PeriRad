@@ -1,6 +1,6 @@
 _base_ = [
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py',
-    './yolox_tta.py'
+    '../mmdetection/configs/_base_/schedules/schedule_1x.py', '../mmdetection/configs/_base_/default_runtime.py',
+    '../mmdetection/configs/yolox/yolox_tta.py'
 ]
 
 img_scale = (640, 640)  # width, height
@@ -39,7 +39,7 @@ model = dict(
         act_cfg=dict(type='Swish')),
     bbox_head=dict(
         type='YOLOXHead',
-        num_classes=80,
+        num_classes=2,
         in_channels=128,
         feat_channels=128,
         stacked_convs=2,
@@ -70,8 +70,15 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = 'data/coco/'
+data_root = 'dataset/Task1/'
 dataset_type = 'CocoDataset'
+metainfo = {
+    'classes': ('N', 'Y'),
+    'palette': [
+        (90, 150, 200),
+        (250, 120, 80),
+    ]
+}
 
 # Example to use different file client
 # Method 1: simply set the data root and let the file I/O module
@@ -124,8 +131,9 @@ train_dataset = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/instances_train2017.json',
-        data_prefix=dict(img='train2017/'),
+        metainfo=metainfo,
+        ann_file='annotation_coco_train.json',
+        data_prefix=dict(img='train/'),
         pipeline=[
             dict(type='LoadImageFromFile', backend_args=backend_args),
             dict(type='LoadAnnotations', with_bbox=True)
@@ -155,30 +163,50 @@ train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=train_dataset)
 val_dataloader = dict(
-    batch_size=8,
-    num_workers=4,
+    batch_size=1,
+    num_workers=2,
     persistent_workers=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/instances_val2017.json',
-        data_prefix=dict(img='val2017/'),
+        metainfo=metainfo,
+        ann_file='annotation_coco_val.json',
+        data_prefix=dict(img='val/'),
         test_mode=True,
         pipeline=test_pipeline,
         backend_args=backend_args))
-test_dataloader = val_dataloader
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        metainfo=metainfo,
+        ann_file='annotation_coco_test.json',
+        data_prefix=dict(img='test/'),
+        test_mode=True,
+        pipeline=test_pipeline,
+        backend_args=backend_args))
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/instances_val2017.json',
+    ann_file=data_root + 'annotation_coco_val.json',
     metric='bbox',
     backend_args=backend_args)
-test_evaluator = val_evaluator
+test_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root + 'annotation_coco_test.json',
+    metric='bbox',
+    backend_args=backend_args,
+    format_only=False)
 
 # training settings
-max_epochs = 300
+max_epochs = 200
 num_last_epochs = 15
 interval = 10
 
