@@ -10,7 +10,7 @@ Standard deep learning workspace
 
 ### Step 1: prepare data
 
-create dataset directory and put raw data in the directory.
+create dataset directory and put raw data in the directory, run [make_task3_dataset.py](../data/make_task3_dataset.py) to automatically build the dataset. 
 
 ### Step 2: training
 
