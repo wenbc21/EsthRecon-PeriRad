@@ -89,20 +89,21 @@ class ResNet(nn.Module):
     def __init__(self,
                  block,
                  blocks_num,
+                 in_channels=3,
                  num_classes=1000,
                  include_top=True,
                  groups=1,
                  width_per_group=64):
         super(ResNet, self).__init__()
         self.include_top = include_top
-        self.in_channel = 64
+        self.input_channel = 64
 
         self.groups = groups
         self.width_per_group = width_per_group
 
-        self.conv1 = nn.Conv2d(3, self.in_channel, kernel_size=7, stride=2,
+        self.conv1 = nn.Conv2d(in_channels, self.input_channel, kernel_size=7, stride=2,
                                padding=3, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.in_channel)
+        self.bn1 = nn.BatchNorm2d(self.input_channel)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, blocks_num[0])
@@ -119,22 +120,22 @@ class ResNet(nn.Module):
 
     def _make_layer(self, block, channel, block_num, stride=1):
         downsample = None
-        if stride != 1 or self.in_channel != channel * block.expansion:
+        if stride != 1 or self.input_channel != channel * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.in_channel, channel * block.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(self.input_channel, channel * block.expansion, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(channel * block.expansion))
 
         layers = []
-        layers.append(block(self.in_channel,
+        layers.append(block(self.input_channel,
                             channel,
                             downsample=downsample,
                             stride=stride,
                             groups=self.groups,
                             width_per_group=self.width_per_group))
-        self.in_channel = channel * block.expansion
+        self.input_channel = channel * block.expansion
 
         for _ in range(1, block_num):
-            layers.append(block(self.in_channel,
+            layers.append(block(self.input_channel,
                                 channel,
                                 groups=self.groups,
                                 width_per_group=self.width_per_group))
@@ -160,37 +161,39 @@ class ResNet(nn.Module):
         return x
 
 
-def resnet34(num_classes=1000, include_top=True):
+def resnet34(in_channels=3, num_classes=1000, include_top=True):
     # https://download.pytorch.org/models/resnet34-333f7ec4.pth
-    return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes, include_top=include_top)
+    return ResNet(BasicBlock, [3, 4, 6, 3], in_channels=in_channels, num_classes=num_classes, include_top=include_top)
 
 
-def resnet50(num_classes=1000, include_top=True):
+def resnet50(in_channels=3, num_classes=1000, include_top=True):
     # https://download.pytorch.org/models/resnet50-19c8e357.pth
-    return ResNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes, include_top=include_top)
+    return ResNet(Bottleneck, [3, 4, 6, 3], in_channels=in_channels, num_classes=num_classes, include_top=include_top)
 
 
-def resnet101(num_classes=1000, include_top=True):
+def resnet101(in_channels=3, num_classes=1000, include_top=True):
     # https://download.pytorch.org/models/resnet101-5d3b4d8f.pth
-    return ResNet(Bottleneck, [3, 4, 23, 3], num_classes=num_classes, include_top=include_top)
+    return ResNet(Bottleneck, [3, 4, 23, 3], in_channels=in_channels, num_classes=num_classes, include_top=include_top)
 
 
-def resnext50_32x4d(num_classes=1000, include_top=True):
+def resnext50_32x4d(in_channels=3, num_classes=1000, include_top=True):
     # https://download.pytorch.org/models/resnext50_32x4d-7cdf4587.pth
     groups = 32
     width_per_group = 4
     return ResNet(Bottleneck, [3, 4, 6, 3],
+                  in_channels=in_channels,
                   num_classes=num_classes,
                   include_top=include_top,
                   groups=groups,
                   width_per_group=width_per_group)
 
 
-def resnext101_32x8d(num_classes=1000, include_top=True):
+def resnext101_32x8d(in_channels=3, num_classes=1000, include_top=True):
     # https://download.pytorch.org/models/resnext101_32x8d-8ba56ff5.pth
     groups = 32
     width_per_group = 8
     return ResNet(Bottleneck, [3, 4, 23, 3],
+                  in_channels=in_channels,
                   num_classes=num_classes,
                   include_top=include_top,
                   groups=groups,

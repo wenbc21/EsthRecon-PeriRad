@@ -16,16 +16,18 @@ def get_args_parser():
     parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--val_interval', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--num_workers', type=int, default=4)
-    parser.add_argument('--lr', type=float, default=5e-4)
-    parser.add_argument('--weight_decay', type=float, default=1e-3)
-    parser.add_argument('--task', type=str, default="Task3")
-    parser.add_argument('--data_path', type=str, default="dataset/Task3")
+    parser.add_argument('--lr', type=float, default=2e-4)
+    parser.add_argument('--weight_decay', type=float, default=1e-4)
+    parser.add_argument('--task', type=str, default="Task1_crop_gray")
+    parser.add_argument('--data_path', type=str, default="dataset/Task1_crop")
+    parser.add_argument('--is_rgb', type=bool, default=False)
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
-    parser.add_argument('--model_config', type=str, default='DenseNet161')
-    parser.add_argument('--pretrained', type=str, default='pretrained/densenet161.pth', help='initial weights path')
+    parser.add_argument('--model_config', type=str, default='DenseNet201')
+    parser.add_argument('--pretrained', type=str, default='', help='initial weights path')
     parser.add_argument('--freeze_layers', type=bool, default=False)
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
@@ -40,7 +42,8 @@ def main(args):
     train_images_path, train_images_label = read_dataset(args.data_path, "train")
     val_images_path, val_images_label = read_dataset(args.data_path, "val")
     
-    mean, std = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225] if args.pretrained != "" else get_mean_std(train_images_path)
+    # mean, std = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225] if args.pretrained != "" else get_mean_std(train_images_path)
+    mean, std = [0.5], [0.5]
 
     train_dataset = MyDataSet(
         images_path=train_images_path,
@@ -77,44 +80,50 @@ def main(args):
         collate_fn=val_dataset.collate_fn
     )
     
-    # # ResNet
-    # model = model_dict[args.model_config]()
-    # if args.pretrained != "":
-    #     assert os.path.exists(args.pretrained), "file {} does not exist.".format(args.pretrained)
-    #     model.load_state_dict(torch.load(args.pretrained))
-    #     for param in model.parameters():
-    #         param.requires_grad = False
-    #     in_channel = model.fc.in_features
-    #     model.fc = torch.nn.Linear(in_channel, args.num_classes)
-    
-    # DenseNet
-    model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
-    if args.pretrained != "":
-        if os.path.exists(args.pretrained):
-            load_state_dict(model, args.pretrained)
-        else:
-            raise FileNotFoundError("not found weights file: {}".format(args.pretrained))
-    
-    # # EfficientNet
-    # model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
-    # if args.pretrained != "":
-    #     if os.path.exists(args.pretrained):
-    #         pretrained_dict = torch.load(args.pretrained, map_location=device)
-    #         load_weights_dict = {k: v for k, v in pretrained_dict.items()
-    #                              if model.state_dict()[k].numel() == v.numel()}
-    #         model.load_state_dict(load_weights_dict, strict=False)
-    #     else:
-    #         raise FileNotFoundError("not found weights file: {}".format(args.weights))
-
-    # # ConvNeXt
-    # model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
-    # if args.pretrained != "":
-    #     assert os.path.exists(args.pretrained), "pretrained file: '{}' not exist.".format(args.pretrained)
-    #     pretrained_dict = torch.load(args.pretrained, map_location=device)["model"]
-    #     for k in list(pretrained_dict.keys()):
-    #         if "head" in k:
-    #             del pretrained_dict[k]
-    #     model.load_state_dict(pretrained_dict, strict=False)
+    if args.model_config.startswith("Res") :
+        # ResNet
+        model = model_dict[args.model_config]()
+        if args.pretrained != "":
+            assert os.path.exists(args.pretrained), "file {} does not exist.".format(args.pretrained)
+            model.load_state_dict(torch.load(args.pretrained))
+            for param in model.parameters():
+                param.requires_grad = False
+            in_channel = model.fc.in_features
+            model.fc = torch.nn.Linear(in_channel, args.num_classes)
+    elif args.model_config.startswith("Dense") :
+        # DenseNet
+        model = model_dict[args.model_config](in_channels=1, num_classes=args.num_classes).to(device)
+        if args.pretrained != "":
+            if os.path.exists(args.pretrained):
+                load_state_dict(model, args.pretrained)
+            else:
+                raise FileNotFoundError("not found weights file: {}".format(args.pretrained))
+    elif args.model_config.startswith("Efficient") :
+        model = model_dict[args.model_config](in_channels=1, num_classes=args.num_classes).to(device)
+        if args.pretrained != "":
+            if os.path.exists(args.pretrained):
+                pretrained_dict = torch.load(args.pretrained, map_location=device)
+                load_weights_dict = {k: v for k, v in pretrained_dict.items()
+                                    if model.state_dict()[k].numel() == v.numel()}
+                model.load_state_dict(load_weights_dict, strict=False)
+            else:
+                raise FileNotFoundError("not found weights file: {}".format(args.weights))
+    elif args.model_config.startswith("Conv") :
+        # ConvNeXt
+        model = model_dict[args.model_config](in_channels=1, num_classes=args.num_classes).to(device)
+        if args.pretrained != "":
+            assert os.path.exists(args.pretrained), "pretrained file: '{}' not exist.".format(args.pretrained)
+            pretrained_dict = torch.load(args.pretrained, map_location=device)["model"]
+            for k in list(pretrained_dict.keys()):
+                if "head" in k:
+                    del pretrained_dict[k]
+            model.load_state_dict(pretrained_dict, strict=False)
+    elif args.model_config.startswith("UNet") :
+        # UNet
+        model = model_dict[args.model_config](n_channels=3, n_classes=args.num_classes).to(device)
+    else :
+        print("argument fault!")
+        exit()
 
     if args.freeze_layers:
         for name, para in model.named_parameters():
@@ -126,8 +135,8 @@ def main(args):
     model.to(device)
 
     parameters = get_params_groups(model, weight_decay=args.weight_decay)
-    optimizer = optim.SGD(parameters, lr=args.lr, momentum=0.9, weight_decay=args.weight_decay, nesterov=True) # DenseNet, EfficientNet, ConvNeXt
-    # optimizer = optim.Adam(parameters, lr=args.lr) # ResNet
+    # optimizer = optim.SGD(parameters, lr=args.lr, momentum=0.9, weight_decay=args.weight_decay, nesterov=True)
+    optimizer = optim.Adam(parameters, lr=args.lr, weight_decay=args.weight_decay)
     lr_scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True, warmup_epochs=3)
 
     # train
@@ -135,7 +144,7 @@ def main(args):
     val_losses = []
     max_accuracy = 0.0
 
-    for epoch in range(args.epochs):
+    for epoch in range(1, args.epochs + 1):
         # train
         train_loss, train_acc = train_one_epoch(
             model=model,
@@ -157,7 +166,7 @@ def main(args):
         # logging
         train_losses.append(train_loss)
         val_losses.append(val_loss)
-        print("[epoch {}] accuracy: {}".format(epoch, round(val_acc, 3)))
+        print("[epoch {}] accuracy: {}".format(epoch, round(val_acc, 4)))
 
         # save model
         if max_accuracy <= val_acc and epoch > 5:

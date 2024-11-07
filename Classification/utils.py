@@ -148,7 +148,7 @@ def plot_training_loss(train_losses, val_losses, args) :
     plt.plot(x, np.array(val_losses), c='b', ls ='-', label = "validation_loss")
     plt.xlabel("epoch")
     plt.ylabel("loss")
-    plt.ylim((0.0, 2.0))
+    plt.ylim((0.0, 1.0))
     plt.grid()
     plt.legend()
     plt.savefig(os.path.join(args.results_dir, args.model_config + "_train_loss.png"))

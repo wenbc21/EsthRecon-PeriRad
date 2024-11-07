@@ -8,14 +8,14 @@ _base_ = [
 custom_imports = dict(
     imports=['projects.EfficientDet.efficientdet'], allow_failed_imports=False)
 
-image_size = 640
+image_size = 512
 batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
 ]
 dataset_type = 'CocoDataset'
 evalute_type = 'CocoMetric'
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
-checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b3_3rdparty_8xb32-aa-advprop_in1k_20220119-53b41118.pth'  # noqa
+checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b0_3rdparty_8xb32-aa-advprop_in1k_20220119-26434485.pth'  # noqa
 model = dict(
     type='EfficientDet',
     data_preprocessor=dict(
@@ -27,8 +27,8 @@ model = dict(
         batch_augments=batch_augments),
     backbone=dict(
         type='EfficientNet',
-        arch='b3',
-        drop_path_rate=0.3,
+        arch='b0',
+        drop_path_rate=0.2,
         out_indices=(3, 4, 5),
         frozen_stages=0,
         conv_cfg=dict(type='Conv2dSamePadding'),
@@ -38,18 +38,18 @@ model = dict(
             type='Pretrained', prefix='backbone', checkpoint=checkpoint)),
     neck=dict(
         type='BiFPN',
-        num_stages=6,
-        in_channels=[48, 136, 384],
-        out_channels=160,
+        num_stages=3,
+        in_channels=[40, 112, 320],
+        out_channels=64,
         start_level=0,
         norm_cfg=norm_cfg),
     bbox_head=dict(
         type='EfficientDetSepBNHead',
         num_classes=2,
         num_ins=5,
-        in_channels=160,
-        feat_channels=160,
-        stacked_convs=4,
+        in_channels=64,
+        feat_channels=64,
+        stacked_convs=3,
         norm_cfg=norm_cfg,
         anchor_generator=dict(
             type='AnchorGenerator',
@@ -95,7 +95,7 @@ model = dict(
         max_per_img=100))
 
 # dataset settings
-data_root = 'dataset/Task1/'
+data_root = 'dataset/Task3_detection/'
 metainfo = {
     'classes': ('N', 'Y'),
     'palette': [
@@ -103,7 +103,7 @@ metainfo = {
         (250, 120, 80),
     ]
 }
-backend_args = None
+backend_args=None
 train_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -127,26 +127,30 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=8,
-    num_workers=4,
+    batch_size=16,
+    num_workers=8,
     dataset=dict(
-        type=dataset_type, 
+        type=dataset_type,
         data_root=data_root,
         metainfo=metainfo,
         ann_file='annotation_coco_train.json',
         data_prefix=dict(img='train/'),
         pipeline=train_pipeline))
 val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
     dataset=dict(
-        type=dataset_type, 
+        type=dataset_type,
         data_root=data_root,
         metainfo=metainfo,
         ann_file='annotation_coco_val.json',
         data_prefix=dict(img='val/'),
         pipeline=test_pipeline))
 test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
     dataset=dict(
-        type=dataset_type, 
+        type=dataset_type,
         data_root=data_root,
         metainfo=metainfo,
         ann_file='annotation_coco_test.json',
@@ -173,19 +177,19 @@ optim_wrapper = dict(
     clip_grad=dict(max_norm=10, norm_type=2))
 
 # learning policy
-max_epochs = 150
+max_epochs = 75
 param_scheduler = [
-    dict(type='LinearLR', start_factor=0.1, by_epoch=True, begin=0, end=15),
+    dict(type='LinearLR', start_factor=0.1, by_epoch=True, begin=0, end=10),
     dict(
         type='CosineAnnealingLR',
         eta_min=0.0,
         begin=1,
-        T_max=149,
-        end=150,
+        T_max=74,
+        end=75,
         by_epoch=True,
         convert_to_iter_based=True)
 ]
-train_cfg = dict(max_epochs=max_epochs, val_interval=15)
+train_cfg = dict(max_epochs=max_epochs, val_interval=10)
 
 vis_backends = [
     dict(type='LocalVisBackend'),
@@ -194,7 +198,7 @@ vis_backends = [
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 
-default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=15))
+default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=10))
 custom_hooks = [
     dict(
         type='EMAHook',

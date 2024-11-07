@@ -1,7 +1,8 @@
 from model.ResNet import resnet34, resnet50, resnet101, resnext50_32x4d, resnext101_32x8d
 from model.DenseNet import densenet121, densenet161, densenet169, densenet201
 from model.EfficientNet import efficientnetv2_s, efficientnetv2_m, efficientnetv2_l
-from model.ConvNeXt import convnext_tiny, convnext_small, convnext_base, convnext_large
+from model.ConvNeXt import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
+from model.UNet import UNet
 
 model_dict = {
     "ResNet34" : resnet34,
@@ -20,4 +21,6 @@ model_dict = {
     "ConvNeXt_small" : convnext_small,
     "ConvNeXt_base" : convnext_base,
     "ConvNeXt_large" : convnext_large,
+    "ConvNeXt_xlarge" : convnext_xlarge,
+    "UNet" : UNet
 }

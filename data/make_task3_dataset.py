@@ -4,7 +4,7 @@ import pandas as pd
 import random
 
 raw_file = 'data/raw_data/YS'
-out_file = 'data/dataset/Task3'
+out_file='data/dataset/Task3'
 
 image_dirs = [item.path for item in os.scandir(raw_file) if item.is_file()]
 groundtruth = pd.read_csv("data/groundtruth.csv").values.tolist()
@@ -22,6 +22,8 @@ print(pat_num, img_num)
 
 df = pd.read_csv("data/groundtruth.csv", encoding="utf-8")
 pat_id = list({pid.split("R")[0][1:]: 1 for pid in df["id"].to_list()})
+print(pat_id)
+
 
 random.seed(75734)
 # train = 0.64 val = 0.16 test = 0.2
@@ -29,6 +31,9 @@ random.shuffle(pat_id)
 train = pat_id[:round(0.64*len(pat_id))]
 val = pat_id[round(0.64*len(pat_id)):round(0.8*len(pat_id))]
 test = pat_id[round(0.8*len(pat_id)):]
+test.sort()
+print(test)
+exit()
 
 split_compose = {"train":train, "val":val, "test":test}
 for split in ["train", "val", "test"] :

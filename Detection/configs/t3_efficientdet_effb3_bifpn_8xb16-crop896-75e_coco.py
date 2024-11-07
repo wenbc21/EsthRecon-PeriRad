@@ -95,7 +95,7 @@ model = dict(
         max_per_img=100))
 
 # dataset settings
-data_root = 'dataset/Task1/'
+data_root = 'dataset/Task3_detection/'
 metainfo = {
     'classes': ('N', 'Y'),
     'palette': [
@@ -173,19 +173,19 @@ optim_wrapper = dict(
     clip_grad=dict(max_norm=10, norm_type=2))
 
 # learning policy
-max_epochs = 150
+max_epochs = 75
 param_scheduler = [
-    dict(type='LinearLR', start_factor=0.1, by_epoch=True, begin=0, end=15),
+    dict(type='LinearLR', start_factor=0.1, by_epoch=True, begin=0, end=10),
     dict(
         type='CosineAnnealingLR',
         eta_min=0.0,
         begin=1,
-        T_max=149,
-        end=150,
+        T_max=74,
+        end=75,
         by_epoch=True,
         convert_to_iter_based=True)
 ]
-train_cfg = dict(max_epochs=max_epochs, val_interval=15)
+train_cfg = dict(max_epochs=max_epochs, val_interval=10)
 
 vis_backends = [
     dict(type='LocalVisBackend'),
@@ -194,7 +194,7 @@ vis_backends = [
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 
-default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=15))
+default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=10))
 custom_hooks = [
     dict(
         type='EMAHook',

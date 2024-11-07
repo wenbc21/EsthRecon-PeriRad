@@ -240,6 +240,7 @@ class FusedMBConv(nn.Module):
 class EfficientNetV2(nn.Module):
     def __init__(self,
                  model_cnf: list,
+                 in_channels: int = 3,
                  num_classes: int = 1000,
                  num_features: int = 1280,
                  dropout_rate: float = 0.2,
@@ -253,7 +254,7 @@ class EfficientNetV2(nn.Module):
 
         stem_filter_num = model_cnf[0][4]
 
-        self.stem = ConvBNAct(3,
+        self.stem = ConvBNAct(in_channels,
                               stem_filter_num,
                               kernel_size=3,
                               stride=2,
@@ -315,7 +316,7 @@ class EfficientNetV2(nn.Module):
         return x
 
 
-def efficientnetv2_s(num_classes: int = 1000):
+def efficientnetv2_s(in_channels: int = 3, num_classes: int = 1000):
     """
     EfficientNetV2
     https://arxiv.org/abs/2104.00298
@@ -331,12 +332,13 @@ def efficientnetv2_s(num_classes: int = 1000):
                     [15, 3, 2, 6, 160, 256, 1, 0.25]]
 
     model = EfficientNetV2(model_cnf=model_config,
+                           in_channels=in_channels,
                            num_classes=num_classes,
                            dropout_rate=0.2)
     return model
 
 
-def efficientnetv2_m(num_classes: int = 1000):
+def efficientnetv2_m(in_channels: int = 3, num_classes: int = 1000):
     """
     EfficientNetV2
     https://arxiv.org/abs/2104.00298
@@ -353,12 +355,13 @@ def efficientnetv2_m(num_classes: int = 1000):
                     [5, 3, 1, 6, 304, 512, 1, 0.25]]
 
     model = EfficientNetV2(model_cnf=model_config,
+                           in_channels=in_channels,
                            num_classes=num_classes,
                            dropout_rate=0.3)
     return model
 
 
-def efficientnetv2_l(num_classes: int = 1000):
+def efficientnetv2_l(in_channels: int = 3, num_classes: int = 1000):
     """
     EfficientNetV2
     https://arxiv.org/abs/2104.00298
@@ -375,6 +378,7 @@ def efficientnetv2_l(num_classes: int = 1000):
                     [7, 3, 1, 6, 384, 640, 1, 0.25]]
 
     model = EfficientNetV2(model_cnf=model_config,
+                           in_channels=in_channels,
                            num_classes=num_classes,
                            dropout_rate=0.4)
     return model

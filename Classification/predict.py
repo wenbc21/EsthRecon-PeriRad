@@ -17,14 +17,64 @@ from utils import read_dataset, plot_test_metrics, tensor2img
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC model testing script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
-    parser.add_argument('--task', type=str, default="Task3")
-    parser.add_argument('--data_path', type=str, default="dataset/Task3")
+    parser.add_argument('--task', type=str, default="Task1_crop_gray")
+    parser.add_argument('--data_path', type=str, default="dataset/Task1_crop")
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
-    parser.add_argument('--model_config', type=str, default='densenet161')
+    parser.add_argument('--model_config', type=str, default='DenseNet169')
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
     return parser
+
+def augment_and_pad(image, target_size, mean, std):
+        # # 获取增强后的图像尺寸
+        width, height = image.size
+
+        # 计算长边缩放到目标大小后的新尺寸
+        if width > height:
+            new_width = target_size
+            new_height = int(height * (target_size / width))
+        else:
+            new_height = target_size
+            new_width = int(width * (target_size / height))
+        
+        # 定义调整大小和填充的变换
+        transform = transforms.Compose([
+            transforms.Resize((new_height, new_width)),
+        ])
+        
+        image = transform(image)
+        
+        # 获取增强后的图像尺寸
+        width, height = image.size
+
+        if width > height:
+            # 图像较宽
+            new_width = target_size
+            new_height = int(height * (target_size / width))
+        else:
+            # 图像较高
+            new_height = target_size
+            new_width = int(width * (target_size / height))
+        
+        pad_height1 = (target_size - new_width) // 2
+        pad_height2 = target_size - new_width - pad_height1
+        pad_width1 = (target_size - new_height) // 2
+        pad_width2 = target_size - new_height - pad_width1
+
+        # 创建变换
+        transform = transforms.Compose([
+            # transforms.Resize((new_height, new_width)),  # 首先调整大小
+            transforms.Pad((pad_height1, pad_width1, pad_height2, pad_width2), fill=(0)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std)
+        ])
+        
+        # 应用调整大小和填充变换
+        padded_image = transform(image)
+        
+        return padded_image
+
 
 def main(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
@@ -45,24 +95,25 @@ def main(args):
         
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
+    mean, std = [0.5], [0.2]
 
-    # transform
-    data_transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean, std)
-    ])
+    # # transform
+    # data_transform = transforms.Compose([
+    #     transforms.Resize(256),
+    #     transforms.CenterCrop(224),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean, std)
+    # ])
 
     # inference
     for img_path, image_label in zip(test_images_path, test_images_label) :
         # load image
-        img = Image.open(img_path)
-        img = data_transform(img)
+        img = Image.open(img_path).convert('L')
+        img = augment_and_pad(img, 224, mean, std)
         img = torch.unsqueeze(img, dim=0)
 
         # create model
-        model = model_dict[args.model_config](num_classes=args.num_classes).to(device)
+        model = model_dict[args.model_config](in_channels=1, num_classes=args.num_classes).to(device)
         # target_layers = [model.layer4[-1]]
 
         # load model weights
@@ -110,9 +161,6 @@ def main(args):
     auroc, auprc = plot_test_metrics(test_images_label, test_images_predict, args.results_dir, args.model_config)
     print(f"AUROC: {auroc}, AUPRC: {auprc}")
     f.write(f"AUROC: {auroc}, AUPRC: {auprc}\n")
-    # results_json = {"accuracy": accuracy, "precision": precision, "recall": recall, "f1":f1, "auroc": auroc, "auprc": auprc}
-    # with open(f"{args.results_dir}/{args.model_config}_metrics.json","w") as f:
-    #     json.dump(results_json, f, indent=4)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('SAC model testing script for image classification', parents=[get_args_parser()])

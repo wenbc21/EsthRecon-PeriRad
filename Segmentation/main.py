@@ -61,6 +61,9 @@ for i in range(len(images)) :
     vis_ori = Image.fromarray(np.uint8(vis_ori))
     vis_ori.save(f"results/vis_ori/{sig}_vis_ori.png")
     
+    if cnt.size != 8 :
+        print("!!!")
+        continue
     cnt = cnt.reshape(4, 2)
     sorted_indices = np.argsort(cnt[:, 1]+cnt[:, 0])  # 获取按第二列排序的索引
     sorted_cnt = cnt[sorted_indices]

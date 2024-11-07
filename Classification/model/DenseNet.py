@@ -137,6 +137,7 @@ class DenseNet(nn.Module):
     """
 
     def __init__(self,
+                 in_channels: int = 3, 
                  growth_rate: int = 32,
                  block_config: Tuple[int, int, int, int] = (6, 12, 24, 16),
                  num_init_features: int = 64,
@@ -148,7 +149,7 @@ class DenseNet(nn.Module):
 
         # first conv+bn+relu+pool
         self.features = nn.Sequential(OrderedDict([
-            ("conv0", nn.Conv2d(3, num_init_features, kernel_size=7, stride=2, padding=3, bias=False)),
+            ("conv0", nn.Conv2d(in_channels, num_init_features, kernel_size=7, stride=2, padding=3, bias=False)),
             ("norm0", nn.BatchNorm2d(num_init_features)),
             ("relu0", nn.ReLU(inplace=True)),
             ("pool0", nn.MaxPool2d(kernel_size=3, stride=2, padding=1)),

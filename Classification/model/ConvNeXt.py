@@ -111,7 +111,7 @@ class ConvNeXt(nn.Module):
         A PyTorch impl of : `A ConvNet for the 2020s`  -
           https://arxiv.org/pdf/2201.03545.pdf
     Args:
-        in_chans (int): Number of input image channels. Default: 3
+        in_channels (int): Number of input image channels. Default: 3
         num_classes (int): Number of classes for classification head. Default: 1000
         depths (tuple(int)): Number of blocks at each stage. Default: [3, 3, 9, 3]
         dims (int): Feature dimension at each stage. Default: [96, 192, 384, 768]
@@ -119,12 +119,12 @@ class ConvNeXt(nn.Module):
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
         head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
     """
-    def __init__(self, in_chans: int = 3, num_classes: int = 1000, depths: list = None,
+    def __init__(self, in_channels: int = 3, num_classes: int = 1000, depths: list = None,
                  dims: list = None, drop_path_rate: float = 0., layer_scale_init_value: float = 1e-6,
                  head_init_scale: float = 1.):
         super().__init__()
         self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
-        stem = nn.Sequential(nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
+        stem = nn.Sequential(nn.Conv2d(in_channels, dims[0], kernel_size=4, stride=4),
                              LayerNorm(dims[0], eps=1e-6, data_format="channels_first"))
         self.downsample_layers.append(stem)
 
@@ -170,43 +170,48 @@ class ConvNeXt(nn.Module):
         return x
 
 
-def convnext_tiny(num_classes: int):
+def convnext_tiny(in_channels: int, num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth
-    model = ConvNeXt(depths=[3, 3, 9, 3],
+    model = ConvNeXt(in_channels=in_channels, 
+                     depths=[3, 3, 9, 3],
                      dims=[96, 192, 384, 768],
                      num_classes=num_classes)
     return model
 
 
-def convnext_small(num_classes: int):
+def convnext_small(in_channels: int, num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_small_1k_224_ema.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
+    model = ConvNeXt(in_channels=in_channels, 
+                     depths=[3, 3, 27, 3],
                      dims=[96, 192, 384, 768],
                      num_classes=num_classes)
     return model
 
 
-def convnext_base(num_classes: int):
+def convnext_base(in_channels: int, num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_base_1k_224_ema.pth
     # https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_224.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
+    model = ConvNeXt(in_channels=in_channels, 
+                     depths=[3, 3, 27, 3],
                      dims=[128, 256, 512, 1024],
                      num_classes=num_classes)
     return model
 
 
-def convnext_large(num_classes: int):
+def convnext_large(in_channels: int, num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_large_1k_224_ema.pth
     # https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_224.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
+    model = ConvNeXt(in_channels=in_channels, 
+                     depths=[3, 3, 27, 3],
                      dims=[192, 384, 768, 1536],
                      num_classes=num_classes)
     return model
 
 
-def convnext_xlarge(num_classes: int):
+def convnext_xlarge(in_channels: int, num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_224.pth
-    model = ConvNeXt(depths=[3, 3, 27, 3],
+    model = ConvNeXt(in_channels=in_channels, 
+                     depths=[3, 3, 27, 3],
                      dims=[256, 512, 1024, 2048],
                      num_classes=num_classes)
     return model

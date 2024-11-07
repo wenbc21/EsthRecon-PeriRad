@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/media/amax/f566c04f-5a6b-4301-a323-48c9def2bf1f/amax/Project/wbc/SAC/Detection/mmdetection')
 _base_ = [
     '../mmdetection/configs/_base_/datasets/coco_detection.py',
     '../mmdetection/configs/_base_/schedules/schedule_1x.py',
