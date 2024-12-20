@@ -39,7 +39,7 @@ model = dict(
         act_cfg=dict(type='Swish')),
     bbox_head=dict(
         type='YOLOXHead',
-        num_classes=2,
+        num_classes=1,
         in_channels=128,
         feat_channels=128,
         stacked_convs=2,
@@ -73,10 +73,9 @@ model = dict(
 data_root = 'dataset/Task3_detection/'
 dataset_type = 'CocoDataset'
 metainfo = {
-    'classes': ('N', 'Y'),
+    'classes': ('ROI'),
     'palette': [
-        (90, 150, 200),
-        (250, 120, 80),
+        (90, 150, 200)
     ]
 }
 

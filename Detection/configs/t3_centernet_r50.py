@@ -33,7 +33,7 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='CenterNetUpdateHead',
-        num_classes=2,
+        num_classes=1,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -56,12 +56,11 @@ model = dict(
 
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'dataset/Task1/'
+data_root = 'dataset/Task3_detection/'
 metainfo = {
-    'classes': ('N', 'Y'),
+    'classes': ('ROI'),
     'palette': [
-        (90, 150, 200),
-        (250, 120, 80),
+        (90, 150, 200)
     ]
 }
 

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from sklearn import metrics
+from torchvision import transforms
 
 
 def read_dataset(ori_root: str, split: str):
@@ -50,6 +51,56 @@ def read_dataset(ori_root: str, split: str):
     assert len(images_path) > 0, f"number of {split} images must greater than 0."
 
     return images_path, images_label
+
+
+def augment_and_pad(image, target_size, mean, std, img_channel):
+    # # 获取增强后的图像尺寸
+    width, height = image.size
+
+    # 计算长边缩放到目标大小后的新尺寸
+    if width > height:
+        new_width = target_size
+        new_height = int(height * (target_size / width))
+    else:
+        new_height = target_size
+        new_width = int(width * (target_size / height))
+    
+    # 定义调整大小和填充的变换
+    transform = transforms.Compose([
+        transforms.Resize((new_height, new_width)),
+    ])
+    
+    image = transform(image)
+    
+    # 获取增强后的图像尺寸
+    width, height = image.size
+
+    if width > height:
+        # 图像较宽
+        new_width = target_size
+        new_height = int(height * (target_size / width))
+    else:
+        # 图像较高
+        new_height = target_size
+        new_width = int(width * (target_size / height))
+    
+    pad_height1 = (target_size - new_width) // 2
+    pad_height2 = target_size - new_width - pad_height1
+    pad_width1 = (target_size - new_height) // 2
+    pad_width2 = target_size - new_height - pad_width1
+
+    # 创建变换
+    transform = transforms.Compose([
+        # transforms.Resize((new_height, new_width)),  # 首先调整大小
+        transforms.Pad((pad_height1, pad_width1, pad_height2, pad_width2), fill=(0,)*img_channel),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ])
+    
+    # 应用调整大小和填充变换
+    padded_image = transform(image)
+    
+    return padded_image
 
 
 def create_lr_scheduler(
@@ -151,7 +202,7 @@ def plot_training_loss(train_losses, val_losses, args) :
     plt.ylim((0.0, 1.0))
     plt.grid()
     plt.legend()
-    plt.savefig(os.path.join(args.results_dir, args.model_config + "_train_loss.png"))
+    plt.savefig(os.path.join(args.results_dir, f"fold{args.fold}_train_loss.png"))
     
 
 def plot_confusion_matrix(y_true, y_pred, labels_name, title=None, thresh=0.5, axis_labels=None, s=""):

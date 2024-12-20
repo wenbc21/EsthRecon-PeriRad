@@ -11,22 +11,21 @@ Detection workspace using mmDetection and COCO format
 ### Step 1: prepare data
 
 create dataset directory and put raw data in the directory.
-run [make_task1_dataset.py](../data/make_task1_dataset.py) to convert raw data into coco format
+run [labelme_to_coco.py](labelme_to_coco.py) to convert raw data into coco format
 
-### Step 2: install mmDetection
+### Step 2: mmDetection config
 
-follow guide in https://github.com/open-mmlab/mmdetection
+edit configs/* to config the model
 
 ### Step 3: mmDetection training
 
 run [mmdetection/tools/train.py](mmdetection/tools/train.py) with the config file to train a model
 ```
-python mmdetection/tools/train.py configs/yolox_s_8xb8-200e_coco.py
+python mmdetection/tools/train.py configs/t3_yolox_s.py
 ```
 
 ### Step 4: mmDetection evaluate
 
 run [mmdetection/tools/test.py](mmdetection/tools/test.py) with the config file and trained model file to evaluate the results
 ```
-python mmdetection/tools/test.py configs/yolox_s_8xb8-200e_coco.py work_dirs/yolox_s_8xb8-200e_coco/epoch_200.pth --show-dir yolox_s_200
-```
+python mmdetection/tools/test.py configs/t3_yolox_s.py work_dirs/t3_yolox_s/epoch_100.pth --show-dir yolox_s_100

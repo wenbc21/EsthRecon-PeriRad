@@ -39,7 +39,7 @@ model = dict(
         act_cfg=dict(type='Swish')),
     bbox_head=dict(
         type='YOLOXHead',
-        num_classes=2,
+        num_classes=1,
         in_channels=128,
         feat_channels=128,
         stacked_convs=2,
@@ -70,13 +70,12 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = 'dataset/Task1/'
+data_root = 'dataset/Task1_detection/'
 dataset_type = 'CocoDataset'
 metainfo = {
-    'classes': ('N', 'Y'),
+    'classes': ('ROI'),
     'palette': [
-        (90, 150, 200),
-        (250, 120, 80),
+        (90, 150, 200)
     ]
 }
 
@@ -206,8 +205,8 @@ test_evaluator = dict(
     format_only=False)
 
 # training settings
-max_epochs = 200
-num_last_epochs = 15
+max_epochs = 100
+num_last_epochs = 10
 interval = 10
 
 train_cfg = dict(max_epochs=max_epochs, val_interval=interval)

@@ -12,33 +12,12 @@ class MyDataSet(Dataset):
         self.images_class = images_class
         self.mean = mean
         self.std = std
-
-        if is_train :
-            self.transform = transforms.Compose([
-                transforms.Resize(224),
-                # transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(p=0.5),
-                transforms.RandomVerticalFlip(p=0.5),
-                transforms.ColorJitter(brightness=(0, 0.25), contrast=(0.25, 0.5)),
-                transforms.RandomInvert(p=0.2),
-                transforms.RandomRotation(30),
-                transforms.ToTensor(),
-                transforms.Normalize(mean, std)
-            ])
-        else :
-            self.transform = transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize(mean, std)
-            ])
+        self.channels = len(mean)
 
     # 定义变换
     def augment_and_pad(self, image, target_size):
-        # # 获取增强后的图像尺寸
+        # size transform
         width, height = image.size
-
-        # 计算长边缩放到目标大小后的新尺寸
         if width > height:
             new_width = target_size
             new_height = int(height * (target_size / width))
@@ -46,15 +25,9 @@ class MyDataSet(Dataset):
             new_height = target_size
             new_width = int(width * (target_size / height))
         
-        # 定义调整大小和填充的变换
-        transform = transforms.Compose([
-            transforms.Resize((new_height, new_width)),
-        ])
-        
-        image = transform(image)
-        
         # 创建增强变换
         augment_transform = transforms.Compose([
+            transforms.Resize((new_height, new_width)),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomVerticalFlip(p=0.5),
             transforms.ColorJitter(brightness=(0.75, 1.5), contrast=(1.25, 1.75)),
@@ -84,7 +57,7 @@ class MyDataSet(Dataset):
         # 创建变换
         transform = transforms.Compose([
             # transforms.Resize((new_height, new_width)),  # 首先调整大小
-            transforms.Pad((pad_height1, pad_width1, pad_height2, pad_width2), fill=(0)),
+            transforms.Pad((pad_height1, pad_width1, pad_height2, pad_width2), fill=(0,)*self.channels),
             transforms.ToTensor(),
             transforms.Normalize(self.mean, self.std)
         ])
@@ -98,37 +71,12 @@ class MyDataSet(Dataset):
         return len(self.images_path)
 
     def __getitem__(self, item):
-        img = Image.open(self.images_path[item]).convert('L')
+        img = Image.open(self.images_path[item])
+        if self.channels == 1 :
+            img = img.convert('L')
         
-        # transformed_image = self.augment_and_pad(img, 224)
-
-        # # 查看调整后的尺寸
-        # print("Transformed size:", transformed_image.size)
-
-        # # 显示原始和变换后的图像
-        # plt.figure(figsize=(8, 4))
-
-        # # 显示原始图像
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(img)
-        # plt.title('Original Image')
-        # plt.axis('off')
-
-        # # 显示变换后的图像
-        # plt.subplot(1, 2, 2)
-        # plt.imshow(transformed_image)
-        # plt.title('Transformed Image (256x256)')
-        # plt.axis('off')
-
-        # plt.show()
-
-        # if img.mode != 'RGB':
-        #     raise ValueError("image: {} isn't RGB mode.".format(self.images_path[item]))
-        label = self.images_class[item]
-
-        # if self.transform is not None:
-        #     img = self.transform(img)
         img = self.augment_and_pad(img, 224)
+        label = self.images_class[item]
 
         return img, label
 

@@ -16,20 +16,25 @@ def crop_image_from_labelme(raw_file, out_file):
     label_files.sort()
     
     ids = [str(i) for i in range(1, 276)]
-    print(ids)
-
     random.seed(75734)
     # train = 0.64 val = 0.16 test = 0.2
     random.shuffle(ids)
     train = ids[:round(0.64*len(ids))]
     val = ids[round(0.64*len(ids)):round(0.8*len(ids))]
     test = ids[round(0.8*len(ids)):]
+    # fold1 = ids[:round(0.16*len(ids))]
+    # fold2 = ids[round(0.16*len(ids)):round(0.32*len(ids))]
+    # fold3 = ids[round(0.32*len(ids)):round(0.48*len(ids))]
+    # fold4 = ids[round(0.48*len(ids)):round(0.64*len(ids))]
+    # fold5 = ids[round(0.64*len(ids)):round(0.8*len(ids))]
+    # test = ids[round(0.8*len(ids)):]
     test.sort()
     print(test)
-    exit()    
     
     split_compose = {"train":train, "val":val, "test":test}
     for split in ["train", "val", "test"] :
+    # split_compose = {"fold1":fold1, "fold2":fold2, "fold3":fold3, "fold4":fold4, "fold5":fold5, "test":test}
+    # for split in ["fold1", "fold2", "fold3", "fold4", "fold5", "test"] :
         os.makedirs(os.path.join(out_file, split, "Y"), exist_ok=True)
         os.makedirs(os.path.join(out_file, split, "N"), exist_ok=True)
 
@@ -70,7 +75,15 @@ def crop_image_from_labelme(raw_file, out_file):
                 
                 img_crop.save(os.path.join(out_file, split, category, f"{filename.split('.')[0]}_{j}.jpg"))
                 
-                for k in range(5) :
+                if split == "test" :
+                    continue
+                
+                if category == "Y" :
+                    aug_size = 5
+                else :
+                    aug_size = 2
+
+                for k in range(aug_size) :
                     xx_min = x_min + x_displacement[k]
                     yy_min = y_min + y_displacement[k]
                     xx_max = x_max + x_displacement[-k]
@@ -92,4 +105,4 @@ def crop_image_from_labelme(raw_file, out_file):
 if __name__ == '__main__':
     
     crop_image_from_labelme(raw_file='data/raw_data/Task3_labelme',
-                            out_file='data/dataset/Task3_crop')
+                            out_file='data/dataset/Task3_crop_balanced')

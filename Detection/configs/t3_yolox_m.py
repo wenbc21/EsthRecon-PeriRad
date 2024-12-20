@@ -1,4 +1,4 @@
-_base_ = './t3_yolox_s_8xb8-100e_coco.py'
+_base_ = './t3_yolox_s.py'
 
 # model settings
 model = dict(

@@ -45,7 +45,7 @@ model = dict(
         norm_cfg=norm_cfg),
     bbox_head=dict(
         type='EfficientDetSepBNHead',
-        num_classes=2,
+        num_classes=1,
         num_ins=5,
         in_channels=160,
         feat_channels=160,
@@ -97,10 +97,9 @@ model = dict(
 # dataset settings
 data_root = 'dataset/Task3_detection/'
 metainfo = {
-    'classes': ('N', 'Y'),
+    'classes': ('ROI'),
     'palette': [
-        (90, 150, 200),
-        (250, 120, 80),
+        (90, 150, 200)
     ]
 }
 backend_args = None
