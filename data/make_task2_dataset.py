@@ -46,36 +46,42 @@ def convert_labelme_to_nnunet(raw_file, out_file):
     with open(f"{out_file}/splits_final.json","w") as f:
         json.dump(split_json, f, indent=4)
 
+    train_num = 0
+    val_num = 0
     for i in range(len(img_files)):
         filename = os.path.split(label_files[i])[-1].split(".")[0]    # 提取出.json前的字符作为文件名，以便后续保存Label图片的时候使用
-        split = "Ts" if filename.split("R")[0][1:] in test else "Tr"
+        if filename.split("R")[0][1:] in train :
+            train_num += 1
+            split = "Tr"
+        elif filename.split("R")[0][1:] in val :
+            val_num += 1
+            split = "Tr"
+        else :
+            split = "Ts"
         data = json.load(open(label_files[i]))
         # lbl为label图片（标注的地方用类别名对应的数字来标，其他为0）lbl_names为label名和数字的对应关系字典
         lbl, lbl_names = utils.shape.labelme_shapes_to_label(cv2.imread(img_files[i]).shape[:2], data['shapes'])   # data['shapes']是json文件中记录着标注的位置及label等信息的字段
 
-        #captions = ['%d: %s' % (l, name) for l, name in enumerate(lbl_names)]
-        #lbl_viz = utils.draw.draw_label(lbl, img, captions)
-        # out_dir = osp.basename(list[i])[:-5]+'_json'
-        # out_dir = osp.join(osp.dirname(list[i]), out_dir)
-        # if not osp.exists(out_dir):
-        #     os.mkdir(out_dir)
-        shutil.copy(img_files[i], os.path.join(out_file, f"images{split}", f"{filename}_0000.png"))
+        img = PIL.Image.open(img_files[i]).convert("L")
+        img.save(os.path.join(out_file, f"images{split}", f"{filename}_0000.png"))
         PIL.Image.fromarray(lbl).save(osp.join(out_file, f"labels{split}", '{}.png'.format(filename)))
-        #PIL.Image.fromarray(lbl_viz).save(osp.join(out_dir, '{}_viz.jpg'.format(filename)))
-
-        # with open(osp.join(out_dir, 'label_names.txt'), 'w') as f:
-        #     for lbl_name in lbl_names:
-        #         f.write(lbl_name + '\n')
-
-        # warnings.warn('info.yaml is being replaced by label_names.txt')
-        # info = dict(label_names=lbl_names)
-        # with open(osp.join(out_dir, 'info.yaml'), 'w') as f:
-        #     yaml.safe_dump(info, f, default_flow_style=False)
-
-        # print('Saved to: %s' % out_dir)
+    
+    dataset_json = {
+        "channel_names": {
+            "0": "images"
+        }, 
+        "labels": {
+            "background": 0,
+            "ROI": 1
+        }, 
+        "numTraining": train_num + val_num, 
+        "file_ending": ".png"
+    }
+    with open(f"{out_file}/dataset.json","w") as f:
+        json.dump(dataset_json, f, indent=4)
 
 
 if __name__ == '__main__':
     
     convert_labelme_to_nnunet(raw_file='data/raw_data/Task2_labelme',
-                            out_file='data/dataset/Task2')
+                            out_file='data/dataset/Dataset835_SACT2')
