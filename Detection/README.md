@@ -28,4 +28,4 @@ python mmdetection/tools/train.py configs/t3_yolox_s.py
 
 run [mmdetection/tools/test.py](mmdetection/tools/test.py) with the config file and trained model file to evaluate the results
 ```
-python mmdetection/tools/test.py configs/t3_yolox_s.py work_dirs/t3_yolox_s/epoch_100.pth --show-dir yolox_s_100
+python mmdetection/tools/test.py configs/t3_yolox_s.py work_dirs/t3_yolox_s/epoch_100.pth --show-dir yolox_s
