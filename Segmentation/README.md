@@ -1,27 +1,24 @@
 # SAC - Segmentation
 
-For Task2
-
-## Structure
-
-[json_to_dataset](json_to_dataset.py) - transform labelme data to dataset
-
-[main.py](main.py) - post process, visualization and get final result
-
-## Workflow
+Using segmentation to generate missing region and locate the keypoints For Task2
+Segmentation workspace using nnU-Net
 
 ### Step 1: prepare data
 
-use labelme to label sementic segmentation for Task2, run [json_to_dataset](json_to_dataset.py) to automatically build the dataset. 
+use labelme to label sementic segmentation for Task2, run [make_task2_dataset](../data/make_task2_dataset.py) to automatically build the dataset. 
 
-### Step 2: nnUNet training
+### Step 2: nnU-Net install
 
-train a nnUNet model using data in nnUNet_raw
+install [nnU-Net](https://github.com/MIC-DKFZ/nnUNet) following the github repo
 
-### Step 3: nnUNet inference
+### Step 2: nnU-Net training
 
-inference images in testset using trained nnUNet model
+train a nnU-Net model for 100 epochs
+
+### Step 3: nnU-Net inference
+
+inference images in testset using trained nnU-Net model
 
 ### Step 4: final classification
 
-put nnUNet results in the directory, run [main.py](main.py) to post process and visualize the results
+put nnU-Net results in the directory, run [main.py](main.py) to post process and visualize the results
