@@ -6,7 +6,7 @@ Detection workspace using mmDetection and COCO format
 ### Step 1: prepare data
 
 create dataset directory and put raw data in the directory.
-run [data/make_task1_detection.py](../data/make_task1_detection.py) and [make_task3_detection](../data/make_task3_detection.py) to convert raw data into coco format
+run [make_task1_detection.py](../data/make_task1_detection.py) and [make_task3_detection](../data/make_task3_detection.py) to convert raw data into coco format
 
 ### Step 2: mmDetection install
 
