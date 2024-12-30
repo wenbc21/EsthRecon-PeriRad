@@ -52,12 +52,53 @@ def read_dataset(ori_root: str, split: str):
 
     return images_path, images_label
 
+def augment_and_pad(self, image, target_size):
+        # size transform
+        width, height = image.size
+        if width > height:
+            new_width = target_size
+            new_height = int(height * (target_size / width))
+        else:
+            new_height = target_size
+            new_width = int(width * (target_size / height))
+        
+        augment_transform = transforms.Compose([
+            transforms.Resize((new_height, new_width)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5),
+            transforms.ColorJitter(brightness=(0.75, 1.5), contrast=(1.25, 1.75)),
+            transforms.RandomRotation(20)
+        ])
+        
+        augmented_image = augment_transform(image)
+        width, height = augmented_image.size
 
-def augment_and_pad(image, target_size, mean, std, img_channel):
-    # # 获取增强后的图像尺寸
+        if width > height:
+            new_width = target_size
+            new_height = int(height * (target_size / width))
+        else:
+            new_height = target_size
+            new_width = int(width * (target_size / height))
+        
+        pad_height1 = (target_size - new_width) // 2
+        pad_height2 = target_size - new_width - pad_height1
+        pad_width1 = (target_size - new_height) // 2
+        pad_width2 = target_size - new_height - pad_width1
+
+        transform = transforms.Compose([
+            transforms.Pad((pad_height1, pad_width1, pad_height2, pad_width2), fill=(0,)*self.channels),
+            transforms.ToTensor(),
+            transforms.Normalize(self.mean, self.std)
+        ])
+        
+        padded_image = transform(augmented_image)
+        
+        return padded_image
+
+
+def resize_and_pad(image, target_size, mean, std, img_channel):
     width, height = image.size
 
-    # 计算长边缩放到目标大小后的新尺寸
     if width > height:
         new_width = target_size
         new_height = int(height * (target_size / width))
@@ -65,22 +106,18 @@ def augment_and_pad(image, target_size, mean, std, img_channel):
         new_height = target_size
         new_width = int(width * (target_size / height))
     
-    # 定义调整大小和填充的变换
     transform = transforms.Compose([
         transforms.Resize((new_height, new_width)),
     ])
     
     image = transform(image)
     
-    # 获取增强后的图像尺寸
     width, height = image.size
 
     if width > height:
-        # 图像较宽
         new_width = target_size
         new_height = int(height * (target_size / width))
     else:
-        # 图像较高
         new_height = target_size
         new_width = int(width * (target_size / height))
     
@@ -89,18 +126,55 @@ def augment_and_pad(image, target_size, mean, std, img_channel):
     pad_width1 = (target_size - new_height) // 2
     pad_width2 = target_size - new_height - pad_width1
 
-    # 创建变换
     transform = transforms.Compose([
-        # transforms.Resize((new_height, new_width)),  # 首先调整大小
         transforms.Pad((pad_height1, pad_width1, pad_height2, pad_width2), fill=(0,)*img_channel),
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])
     
-    # 应用调整大小和填充变换
     padded_image = transform(image)
     
     return padded_image
+
+
+def pad_ori(image, target_size, mean, std, img_channel):
+    width, height = image.size
+
+    if width > height:
+        new_width = target_size
+        new_height = int(height * (target_size / width))
+    else:
+        new_height = target_size
+        new_width = int(width * (target_size / height))
+    
+    transform = transforms.Compose([
+        transforms.Resize((new_height, new_width)),
+    ])
+    
+    image = transform(image)
+    
+    width, height = image.size
+
+    if width > height:
+        new_width = target_size
+        new_height = int(height * (target_size / width))
+    else:
+        new_height = target_size
+        new_width = int(width * (target_size / height))
+    
+    pad_height1 = (target_size - new_width) // 2
+    pad_height2 = target_size - new_width - pad_height1
+    pad_width1 = (target_size - new_height) // 2
+    pad_width2 = target_size - new_height - pad_width1
+
+    transform = transforms.Compose([
+        transforms.Pad((pad_height1, pad_width1, pad_height2, pad_width2), fill=(0,)*img_channel),
+    ])
+    
+    padded_image = transform(image)
+    
+    return padded_image
+
 
 
 def create_lr_scheduler(
@@ -117,10 +191,6 @@ def create_lr_scheduler(
         warmup_epochs = 0
 
     def f(x):
-        """
-        根据step数返回一个学习率倍率因子，
-        注意在训练开始之前，pytorch会提前调用一次lr_scheduler.step()方法
-        """
         if warmup is True and x <= (warmup_epochs * num_step):
             alpha = float(x) / (warmup_epochs * num_step)
             # warmup过程中lr倍率因子从warmup_factor -> 1
@@ -160,7 +230,6 @@ def get_params_groups(model: torch.nn.Module, weight_decay: float = 1e-5):
 
 
 def get_mean_std(path: str) :
-    # 数据集通道数
     img_channels = 3
     img_names = path
     cumulative_mean = np.zeros(img_channels)
@@ -168,7 +237,6 @@ def get_mean_std(path: str) :
 
     for img_name in img_names:
         img = np.array(Image.open(img_name)) / 255.
-        # 对每个维度进行统计，Image.open打开的是HWC格式，最后一维是通道数
         for d in range(3):
             cumulative_mean[d] += img[:, :, d].mean()
             cumulative_std[d] += img[:, :, d].std()

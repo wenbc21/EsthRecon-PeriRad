@@ -1,10 +1,6 @@
 # SAC - Classification
 
-For Task1 and Task3
-
-## Structure
-
-Standard deep learning workspace
+Using CNN to do image classification For Task1 and Task3
 
 ## Workflow
 
@@ -14,11 +10,11 @@ create dataset directory and put raw data in the directory.
 
 ### Step 2: training
 
-run train.py to train. Experiments show that pretrained models are a boost to the performance, so you may create a pretrain directory and download pretrained models following the links in model files (E.g model/ResNet.py, line 169)
+run [train.py](train.py) to train. 
 
 ### Step 3: inference
 
-run predict.py to inference the testset
+run [inference.py](inference.py) to evaluate on the test set cropped from detection
 
 ### Step 4: analyse
 

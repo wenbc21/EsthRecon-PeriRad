@@ -21,8 +21,8 @@ def get_args_parser():
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--lr', type=float, default=2e-4)
     parser.add_argument('--weight_decay', type=float, default=1e-3)
-    parser.add_argument('--task', type=str, default="Task1_balanced")
-    parser.add_argument('--data_path', type=str, default="dataset/Task1_crop_balanced")
+    parser.add_argument('--task', type=str, default="Task1_balanced_5fold")
+    parser.add_argument('--data_path', type=str, default="dataset/Task1_crop_balanced_5fold")
     parser.add_argument('--img_channel', type=int, default=1)
     parser.add_argument('--fold', type=int, default=0)
     parser.add_argument('--weights_dir', type=str, default='weights')
@@ -131,9 +131,6 @@ def main(args):
                 if "head" in k:
                     del pretrained_dict[k]
             model.load_state_dict(pretrained_dict, strict=False)
-    elif args.model_config.startswith("UNet") :
-        # UNet
-        model = model_dict[args.model_config](n_channels=args.img_channel, n_classes=args.num_classes).to(device)
     else :
         print("model config argument fault!")
         exit()
