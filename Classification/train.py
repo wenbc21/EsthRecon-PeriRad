@@ -6,11 +6,11 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
 from dataset import MyDataSet
-from model.model_zoo import model_dict
+from models import model_dict
 
 from engine import train_one_epoch, evaluate
 from utils import read_dataset, create_lr_scheduler, get_params_groups, plot_training_loss
-from model.DenseNet import load_state_dict
+# from model.DenseNet import load_state_dict
 
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC training and evaluation script for image classification', add_help=False)
@@ -93,6 +93,7 @@ def main(args):
         collate_fn=val_dataset.collate_fn
     )
     
+    # build model
     if args.model_config.startswith("Res") :
         # ResNet
         model = model_dict[args.model_config](args.img_channel)
@@ -112,6 +113,7 @@ def main(args):
             else:
                 raise FileNotFoundError("not found weights file: {}".format(args.pretrained))
     elif args.model_config.startswith("Efficient") :
+        # EfficientNet
         model = model_dict[args.model_config](in_channels=args.img_channel, num_classes=args.num_classes).to(device)
         if args.pretrained != "" and args.img_channel == 3:
             if os.path.exists(args.pretrained):

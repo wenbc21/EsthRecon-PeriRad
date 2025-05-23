@@ -3,16 +3,14 @@ import argparse
 import json
 
 import torch
-import numpy as np
 from PIL import Image
-from torchvision import transforms
 from sklearn import metrics
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
-from model.model_zoo import model_dict
-from utils import read_dataset, plot_test_metrics, tensor2img, resize_and_pad
+from models import model_dict
+from utils import read_dataset, plot_test_metrics, tensor2img, augment_and_pad
 
 def get_args_parser():
     parser = argparse.ArgumentParser('SAC model testing script for image classification', add_help=False)
@@ -72,7 +70,7 @@ def main(args):
         img = Image.open(img_path)
         if args.img_channel == 1 :
             img = img.convert('L')
-        img = resize_and_pad(img, 224, mean, std, args.img_channel)
+        img = augment_and_pad(img, 224, mean, std, args.img_channel)
         img = torch.unsqueeze(img, dim=0)
         
         # predict class
@@ -86,10 +84,11 @@ def main(args):
             if args.grad_cam :
                 torch.set_grad_enabled(True)
                 with GradCAM(model=model, target_layers=target_layers) as cam:
-                    targets = [ClassifierOutputTarget(image_label)]
+                    targets = [ClassifierOutputTarget(image_label)] 
                     # aug_smooth=True, eigen_smooth=True 
                     grayscale_cams = cam(input_tensor=img.to(device), targets=targets)
                     for grayscale_cam, tensorg in zip(grayscale_cams,img.to(device)):
+                        # fusion
                         rgb_img = tensor2img(tensorg)
                         visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
                         imggrad = Image.fromarray(visualization)

@@ -1,11 +1,20 @@
 # SAC
 
-Esthetic Risk Assessment 
+Esthetic Risk Assessment of Anterior Implant Restoration
+Based on Deep Learning with Small Samples
 
 ## Structure
 
-Detection - YOLOX, CenterNet, EfficientDet
+Detection
 
-Classification - ResNet, DenseNet, EfficientNet, ConvNeXt
+Classification
 
-Segmentation - nnUNet
+Segmentation
+
+## Task
+
+Task1: Detection + Classification
+
+Task2: Segmentation
+
+Task3: Detection + Classification

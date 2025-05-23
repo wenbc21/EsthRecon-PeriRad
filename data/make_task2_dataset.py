@@ -2,7 +2,6 @@ import json
 import os
 import os.path as osp
 import PIL.Image
-import shutil
 import pandas as pd
 import random
 from labelme import utils
@@ -49,7 +48,7 @@ def convert_labelme_to_nnunet(raw_file, out_file):
     train_num = 0
     val_num = 0
     for i in range(len(img_files)):
-        filename = os.path.split(label_files[i])[-1].split(".")[0]    # 提取出.json前的字符作为文件名，以便后续保存Label图片的时候使用
+        filename = os.path.split(label_files[i])[-1].split(".")[0] 
         if filename.split("R")[0][1:] in train :
             train_num += 1
             split = "Tr"
@@ -59,8 +58,7 @@ def convert_labelme_to_nnunet(raw_file, out_file):
         else :
             split = "Ts"
         data = json.load(open(label_files[i]))
-        # lbl为label图片（标注的地方用类别名对应的数字来标，其他为0）lbl_names为label名和数字的对应关系字典
-        lbl, lbl_names = utils.shape.labelme_shapes_to_label(cv2.imread(img_files[i]).shape[:2], data['shapes'])   # data['shapes']是json文件中记录着标注的位置及label等信息的字段
+        lbl, lbl_names = utils.shape.labelme_shapes_to_label(cv2.imread(img_files[i]).shape[:2], data['shapes']) 
 
         img = PIL.Image.open(img_files[i]).convert("L")
         img.save(os.path.join(out_file, f"images{split}", f"{filename}_0000.png"))

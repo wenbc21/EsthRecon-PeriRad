@@ -1,12 +1,7 @@
-import shutil
 import os
-import cv2
 import json
 import random
-import pandas as pd
-import numpy as np
 from PIL import Image
-# import albumentations as A
 
 def crop_image_from_labelme(raw_file, external_file, out_file):
     os.makedirs(out_file, exist_ok=True)
@@ -29,11 +24,11 @@ def crop_image_from_labelme(raw_file, external_file, out_file):
     random.shuffle(pat_id)
     train = pat_id[:round(0.64*len(pat_id))]
     val = pat_id[round(0.64*len(pat_id)):round(0.8*len(pat_id))]
-    # fold1 = pat_id[:round(0.16*len(pat_id))]
-    # fold2 = pat_id[round(0.16*len(pat_id)):round(0.32*len(pat_id))]
-    # fold3 = pat_id[round(0.32*len(pat_id)):round(0.48*len(pat_id))]
-    # fold4 = pat_id[round(0.48*len(pat_id)):round(0.64*len(pat_id))]
-    # fold5 = pat_id[round(0.64*len(pat_id)):round(0.8*len(pat_id))]
+    fold1 = pat_id[:round(0.16*len(pat_id))]
+    fold2 = pat_id[round(0.16*len(pat_id)):round(0.32*len(pat_id))]
+    fold3 = pat_id[round(0.32*len(pat_id)):round(0.48*len(pat_id))]
+    fold4 = pat_id[round(0.48*len(pat_id)):round(0.64*len(pat_id))]
+    fold5 = pat_id[round(0.64*len(pat_id)):round(0.8*len(pat_id))]
     test = pat_id[round(0.8*len(pat_id)):]
     test.sort()
     print(test)
@@ -41,24 +36,26 @@ def crop_image_from_labelme(raw_file, external_file, out_file):
     random.shuffle(external_id)
     train_external = external_id[:round(0.8*len(external_id))]
     val_external = external_id[round(0.8*len(external_id)):]
-    # fold1_external = pat_id[:round(0.2*len(pat_id))]
-    # fold2_external = pat_id[round(0.2*len(pat_id)):round(0.4*len(pat_id))]
-    # fold3_external = pat_id[round(0.4*len(pat_id)):round(0.6*len(pat_id))]
-    # fold4_external = pat_id[round(0.6*len(pat_id)):round(0.8*len(pat_id))]
-    # fold5_external = pat_id[round(0.8*len(pat_id)):]
+    fold1_external = external_id[:round(0.2*len(external_id))]
+    fold2_external = external_id[round(0.2*len(external_id)):round(0.4*len(external_id))]
+    fold3_external = external_id[round(0.4*len(external_id)):round(0.6*len(external_id))]
+    fold4_external = external_id[round(0.6*len(external_id)):round(0.8*len(external_id))]
+    fold5_external = external_id[round(0.8*len(external_id)):]
     # train_external.sort()
     # val_external.sort()
     # print(train_external)
     # print(val_external)
     # print(img_external)
     # exit()
+
+    test_label = {}
     
-    split_compose = {"train":train, "val":val, "test":test}
-    split_external = {"train":train_external, "val":val_external, "test":[]}
-    for split in ["train", "val", "test"] :
-    # split_compose = {"fold1":fold1, "fold2":fold2, "fold3":fold3, "fold4":fold4, "fold5":fold5, "test":test}
-    # split_external = {"fold1":fold1_external, "fold2":fold2_external, "fold3":fold3_external, "fold4":fold4_external, "fold5":fold5_external, "test":[]}
-    # for split in ["fold1", "fold2", "fold3", "fold4", "fold5", "test"] :
+    # split_compose = {"train":train, "val":val, "test":test}
+    # split_external = {"train":train_external, "val":val_external, "test":[]}
+    # for split in ["train", "val", "test"] :
+    split_compose = {"fold1":fold1, "fold2":fold2, "fold3":fold3, "fold4":fold4, "fold5":fold5, "test":test}
+    split_external = {"fold1":fold1_external, "fold2":fold2_external, "fold3":fold3_external, "fold4":fold4_external, "fold5":fold5_external, "test":[]}
+    for split in ["fold1", "fold2", "fold3", "fold4", "fold5", "test"] :
         os.makedirs(os.path.join(out_file, split, "Y"), exist_ok=True)
         os.makedirs(os.path.join(out_file, split, "N"), exist_ok=True)
 
@@ -71,7 +68,7 @@ def crop_image_from_labelme(raw_file, external_file, out_file):
             
             with open(label_files[i], "r") as f:
                 labels = json.load(f)
-                
+            
             for j in range(len(labels["shapes"])) :
                 label = labels["shapes"][j]
                 
@@ -99,6 +96,7 @@ def crop_image_from_labelme(raw_file, external_file, out_file):
                 img_crop.save(os.path.join(out_file, split, category, f"{filename.split('.')[0]}_{j}.jpg"))
                 
                 if split == "test" :
+                    test_label[f"{filename.split('.')[0]}_{j}"] = [category, (x_min+x_max) / 2]
                     continue
 
                 if category == "Y" :
@@ -182,10 +180,13 @@ def crop_image_from_labelme(raw_file, external_file, out_file):
                     img_crop = image.crop((xx_min, yy_min, xx_max, yy_max))
                     
                     img_crop.save(os.path.join(out_file, split, category, f"{filename.split('.')[0]}_{j}_aug{k+1}.jpg"))
+        
+        with open(f"{out_file}/test_label.json","w") as f:
+            json.dump(test_label, f, indent=4)
 
 
 if __name__ == '__main__':
     
     crop_image_from_labelme(raw_file='data/raw_data/Task1_labelme',
                             external_file='data/raw_data/origin_T1/origin',
-                            out_file='data/dataset/Task1_crop_balanced')
+                            out_file='data/dataset/Task1_crop_balanced_5fold')

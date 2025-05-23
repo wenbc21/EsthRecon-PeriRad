@@ -3,27 +3,25 @@ import argparse
 import json
 
 import torch
-import numpy as np
 from PIL import Image
-from torchvision import transforms
 from sklearn import metrics
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
-from model.model_zoo import model_dict
-from utils import read_dataset, plot_test_metrics, tensor2img, resize_and_pad, pad_ori
+from models import model_dict
+from utils import plot_test_metrics, tensor2img, augment_and_pad, pad_ori
 
 inv_dict = {"N": 0, "Y": 1}
 
 def get_args_parser():
-    parser = argparse.ArgumentParser('SAC model testing script for image classification', add_help=False)
+    parser = argparse.ArgumentParser('SAC model inference script for image classification', add_help=False)
     parser.add_argument('--num_classes', type=int, default=2)
     parser.add_argument('--task', type=str, default="Task1_balanced") # Task1_balanced Task3_crop
     parser.add_argument('--data_path', type=str, default="dataset/Task1_crop_balanced") # Task1_crop_balanced Task3_crop
     parser.add_argument('--img_channel', type=int, default=1)
     parser.add_argument('--fold', type=int, default=0)
-    parser.add_argument('--grad_cam', type=bool, default=True)
+    parser.add_argument('--grad_cam', type=bool, default=False)
     parser.add_argument('--weights_dir', type=str, default='weights')
     parser.add_argument('--results_dir', type=str, default='results')
     parser.add_argument('--model_config', type=str, default='DenseNet169')
@@ -43,7 +41,10 @@ def main(args):
         class_indict = json.load(f)
     
     # load dataset
-    test_images_path = [item.path for item in os.scandir(f"{args.data_path}/t1_cropped") if item.is_file()]
+    if args.task.startswith("Task3") :
+        test_images_path = [item.path for item in os.scandir(f"{args.data_path}/t3_cropped") if item.is_file()]
+    if args.task.startswith("Task1") :
+        test_images_path = [item.path for item in os.scandir(f"{args.data_path}/t1_cropped") if item.is_file()]
     test_images_path.sort()
     test_images_label = []
     with open(os.path.join(args.data_path, "test_label.json"), "r") as test_label_f:
@@ -98,7 +99,7 @@ def main(args):
             img = img.convert('L')
         padded_img = pad_ori(img, 224, mean, std, args.img_channel)
         padded_img.save(os.path.join(args.results_dir, "grad_cam", "original", os.path.split(img_path)[-1]))
-        img = resize_and_pad(img, 224, mean, std, args.img_channel)
+        img = augment_and_pad(img, 224, mean, std, args.img_channel)
         img = torch.unsqueeze(img, dim=0)
         
         # predict class
@@ -112,19 +113,21 @@ def main(args):
             if args.grad_cam :
                 torch.set_grad_enabled(True)
                 with GradCAM(model=model, target_layers=target_layers) as cam:
-                    targets = [ClassifierOutputTarget(0)]
-                    # aug_smooth=True, eigen_smooth=True
+                    targets = [ClassifierOutputTarget(0)] 
+                    # aug_smooth=True, eigen_smooth=True 
                     grayscale_cams = cam(input_tensor=img.to(device), targets=targets)
                     for grayscale_cam, tensorg in zip(grayscale_cams,img.to(device)):
+                        # fusion
                         rgb_img = tensor2img(tensorg)
                         visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
                         imggrad = Image.fromarray(visualization)
                         imggrad.save(os.path.join(args.results_dir, "grad_cam", "N", os.path.split(img_path)[-1]))
                     
-                    targets = [ClassifierOutputTarget(1)]
+                    targets = [ClassifierOutputTarget(1)] 
                     # aug_smooth=True, eigen_smooth=True 
                     grayscale_cams = cam(input_tensor=img.to(device), targets=targets)
                     for grayscale_cam, tensorg in zip(grayscale_cams,img.to(device)):
+                        # fusion
                         rgb_img = tensor2img(tensorg)
                         visualization = show_cam_on_image(rgb_img, grayscale_cam, use_rgb=True)
                         imggrad = Image.fromarray(visualization)
@@ -147,12 +150,12 @@ def main(args):
     print(f"accuracy: {accuracy}, precision: {precision}, recall: {recall}, f1:{f1}")
     f.write(f"accuracy: {accuracy}, precision: {precision}, recall: {recall}, f1:{f1}\n")
     # visualize
-    auroc, auprc = plot_test_metrics(test_images_label, test_images_predict, args.results_dir, f"fold{args.fold}")
+    auroc, auprc = plot_test_metrics(test_images_label, test_images_predict, args.results_dir, "")
     print(f"AUROC: {auroc}, AUPRC: {auprc}")
     f.write(f"AUROC: {auroc}, AUPRC: {auprc}\n")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('SAC model testing script for image classification', parents=[get_args_parser()])
+    parser = argparse.ArgumentParser('SAC model inference script for image classification', parents=[get_args_parser()])
     args = parser.parse_args()
     if args.weights_dir:
         args.weights_dir = os.path.join(args.weights_dir, args.task, args.model_config)

@@ -6,11 +6,11 @@ import pandas as pd
 
 metadata = []
 
-img_file = "imagesTs"
-pdt_file = "predictTs"
+img_file = "test_png"
+pdt_file = "predict"
 
 os.makedirs(f"results/vis_seg", exist_ok=True)
-os.makedirs(f"results/vis_ori/", exist_ok=True)
+os.makedirs(f"results/vis_ori", exist_ok=True)
 images = [item.path for item in os.scandir(img_file) if item.is_file()]
 predicts = [item.path for item in os.scandir(pdt_file) if item.is_file()]
 images.sort()
@@ -20,7 +20,6 @@ for i in range(len(images)) :
     image_name = os.path.split(images[i])[-1].split("_")[0]
     img = cv2.imread(images[i])
     res = cv2.imread(predicts[i])
-    # print(images[i], predicts[i])
     
     res = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
     contours, hierarchy = cv2.findContours(res, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
@@ -33,11 +32,11 @@ for i in range(len(images)) :
     cnt = cv2.approxPolyDP(contours[max_idx], 0.05*cnt_len, True)
 
     cnt = cnt.reshape(-1, 2)
-    sorted_indices = np.argsort(cnt[:, 1]+cnt[:, 0])  # 获取按第二列排序的索引
+    sorted_indices = np.argsort(cnt[:, 1]+cnt[:, 0]) 
     sorted_cnt = cnt[sorted_indices]
     upper_left = sorted_cnt[0]
     lower_right = sorted_cnt[-1]
-    sorted_indices = np.argsort(cnt[:, 1]-cnt[:, 0])  # 获取按第二列排序的索引
+    sorted_indices = np.argsort(cnt[:, 1]-cnt[:, 0]) 
     sorted_cnt = cnt[sorted_indices]
     upper_right = sorted_cnt[0]
     lower_left = sorted_cnt[-1]

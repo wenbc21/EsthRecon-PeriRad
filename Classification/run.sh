@@ -20,6 +20,9 @@ do
     python train.py --fold $x --task Task1_balanced_5fold --model_config ConvNeXt_xlarge --data_path dataset/Task1_crop_balanced_5fold
 done
 
-# # final
-# python train.py --fold 0 --task Task1_balanced --model_config DenseNet169 --data_path dataset/Task1_crop_balanced --epochs 80 --lr 2e-4
-# python train.py --fold 0 --task Task3_crop --model_config DenseNet169 --data_path dataset/Task3_crop --epochs 30 --lr 1e-4
+# final
+python train.py --fold 0 --task Task1_balanced --model_config DenseNet169 --data_path dataset/Task1_crop_balanced_5fold --epochs 80 --lr 2e-4
+python train.py --fold 0 --task Task3_crop --model_config DenseNet161 --data_path dataset/Task3_crop_5fold --epochs 30 --lr 1e-4
+
+python inference.py --task Task1_balanced --model_config DenseNet169 --data_path dataset/Task1_crop_balanced_5fold
+python inference.py --task Task3_crop --model_config DenseNet161 --data_path dataset/Task3_crop_5fold

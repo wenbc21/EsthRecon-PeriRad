@@ -1,10 +1,6 @@
-import shutil
 import os
-import cv2
 import json
 import random
-import pandas as pd
-import numpy as np
 from PIL import Image
 
 def crop_image_from_labelme(raw_file, out_file):
@@ -30,6 +26,9 @@ def crop_image_from_labelme(raw_file, out_file):
     # test = ids[round(0.8*len(ids)):]
     test.sort()
     print(test)
+
+
+    test_label = {}
     
     split_compose = {"train":train, "val":val, "test":test}
     for split in ["train", "val", "test"] :
@@ -76,6 +75,7 @@ def crop_image_from_labelme(raw_file, out_file):
                 img_crop.save(os.path.join(out_file, split, category, f"{filename.split('.')[0]}_{j}.jpg"))
                 
                 if split == "test" :
+                    test_label[f"{filename.split('.')[0]}_{j}"] = [category, (x_min+x_max) / 2]
                     continue
                 
                 if category == "Y" :
@@ -100,9 +100,12 @@ def crop_image_from_labelme(raw_file, out_file):
                     img_crop = image.crop((xx_min, yy_min, xx_max, yy_max))
                     
                     img_crop.save(os.path.join(out_file, split, category, f"{filename.split('.')[0]}_{j}_aug{k+1}.jpg"))
+            
+        with open(f"{out_file}/test_label.json","w") as f:
+            json.dump(test_label, f, indent=4)
 
 
 if __name__ == '__main__':
     
     crop_image_from_labelme(raw_file='data/raw_data/Task3_labelme',
-                            out_file='data/dataset/Task3_crop_balanced')
+                            out_file='data/dataset/Task3_crop')
