@@ -1,20 +1,19 @@
-# SAC
+# EsthRecon-PeriRad
 
-Esthetic Risk Assessment of Anterior Implant Restoration
-Based on Deep Learning with Small Samples
+Esthetic Reconstruction from Periapical Radiographs
 
-## Structure
+## Sturcture
 
-Detection
+Detection Module 
 
-Classification
+Classification Module
 
-Segmentation
+Segmentation Module
 
 ## Task
 
-Task1: Detection + Classification
+INFLAM task (Detection + Classification)
 
-Task2: Segmentation
+RESTOR task (Detection + Classification)
 
-Task3: Detection + Classification
+DISTAN task (Segmentation)
