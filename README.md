@@ -1,6 +1,6 @@
 # EsthRecon-PeriRad
 
-Esthetic Reconstruction from Periapical Radiographs
+Dental Implant Supported Esthetic Reconstruction from Periapical Radiographs
 
 ## Sturcture
 
