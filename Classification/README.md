@@ -1,26 +1,11 @@
-# SAC - Classification
+# EsthRecon-PeriRad - Classification Module
 
-For Task1 and Task3
+Classification workspace for INFLAM and RESTOR tasks.
+Standard deep learning structure using pytorch.
 
-## Structure
+## Usage
 
-Standard deep learning workspace
-
-## Workflow
-
-### Step 1: prepare data
-
-Create dataset directory and put raw data in the directory.
-Run [make_task1_classification.py](../data/make_task1_classification.py) and [make_task3_classification.py](../data/make_task3_classification.py) to make dataset.
-
-### Step 2: training
-
-Run [train.py](train.py) to train. 
-
-### Step 3: inference
-
-Run [predict.py](predict.py) to inference the testset.
-
-### Step 4: analyse
-
-The results will be stored in results directory after training and inference.
+1. Use [make_task1_classification.py](../data/make_task1_classification.py) and [make_task3_classification.py](../data/make_task3_classification.py) to make dataset.
+2. Use [train.py](train.py) to train models. 
+3. Use [predict.py](predict.py) to do inference on testset.
+4. The results will be stored in results directory after training and inference.

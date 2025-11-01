@@ -1,32 +1,11 @@
-# SAC - Segmentation
+# EsthRecon-PeriRad - Segmentation Module
 
-For Task2
+Segmentation workspace for DISTAN task.
+nnUNet is used for its auto configuration ability.
 
-## Structure
-
-[main.py](main.py) - post process, visualization and get final result
-
-## Workflow
-
-### Step 1: prepare data
-
-Use labelme to label sementic segmentation for Task2, run [make_task2_dataset.py](make_task2_dataset.py) to automatically build the dataset. 
-
-### Step 2: install nnUNet
-
-Install and config [nnUNet](https://github.com/MIC-DKFZ/nnUNet).
-```
-git clone https://github.com/MIC-DKFZ/nnUNet.git
-```
-
-### Step 3: nnUNet training
-
-Train a nnUNet model using data in nnUNet_raw
-
-### Step 4: nnUNet inference
-
-Inference images in testset using trained nnUNet model
-
-### Step 5: final classification
-
-Put nnUNet results in the directory, run [main.py](main.py) to post process and visualize the results
+## Usage
+1. Use [labelme](https://github.com/wkentaro/labelme) to label semantic masks, use [make_task2_dataset.py](make_task2_dataset.py) to build the dataset. 
+2. Install and setup [nnUNet](https://github.com/MIC-DKFZ/nnUNet).
+3. Train a segmentation model.
+4. Inference on testset using trained model.
+5. Use [main.py](main.py) to postprocess and visualize the results.
